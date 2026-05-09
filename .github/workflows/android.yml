@@ -16,7 +16,7 @@ on:
 
 jobs:
   pr-build:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-android')
     runs-on: ubuntu-latest
 
     steps:
