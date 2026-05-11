@@ -1,10 +1,8 @@
 import 'dart:io';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutterclaw/app.dart';
-import 'package:flutterclaw/firebase_options.dart';
 import 'package:flutterclaw/services/audio_player_service.dart';
 import 'package:flutterclaw/services/background_service.dart';
 import 'package:flutterclaw/services/live_activity_service.dart';
@@ -24,11 +22,6 @@ void main() async {
   // This works fine on physical devices
   // ignore: avoid_print
   print('ℹ️ Live Activities: deferred initialization (physical devices only)');
-
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
   // Initialize audio service on iOS only. On Android the gateway runs in a
   // foreground service so we don't need audio for keep-alive; media_play

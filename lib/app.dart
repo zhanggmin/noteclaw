@@ -1,5 +1,3 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_analytics/observer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,8 +27,6 @@ class FlutterClawApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final analytics = FirebaseAnalytics.instance;
-
     return ProviderScope(
       child: MaterialApp(
         navigatorKey: FlutterClawApp.navigatorKey,
@@ -68,9 +64,6 @@ class FlutterClawApp extends StatelessWidget {
           Locale('cs'), // Czech
         ],
         home: const _AppRoot(),
-        navigatorObservers: [
-          FirebaseAnalyticsObserver(analytics: analytics),
-        ],
       ),
     );
   }

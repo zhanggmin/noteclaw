@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0120BFB9A546878EC9DE3DF6 /* WasmSandboxHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE41EDB103EE84885D57352 /* WasmSandboxHandler.swift */; };
-		01C43DB862B4B81C81EC9323 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D81097422A6E45E6D483EE56 /* GoogleService-Info.plist */; };
 		104AF79385346D00CE34E428 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACB4962C0D84AADE2592A37 /* Foundation.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		313A429EEEB10B846432136D /* GatewayActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559A99B0DA6C8138E639CAED /* GatewayActivityAttributes.swift */; };
@@ -94,12 +93,13 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		97E801A21CF9000F007C117E /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Runner.entitlements; sourceTree = "<group>"; };
 		AACB4962C0D84AADE2592A37 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		AFA37CCB2FB1DC1B009966BA /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
+		AFA37CCC2FB1DCD5009966BA /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		B2DB265F1E214ADE97D9E973 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		BA5310F31C6EF62246CFD059 /* GatewayLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GatewayLiveActivity.swift; sourceTree = "<group>"; };
 		BCE41EDB103EE84885D57352 /* WasmSandboxHandler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WasmSandboxHandler.swift; sourceTree = "<group>"; };
 		C772045D53917373F393E25B /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4CA88FA7525C099800CFBA5 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
-		D81097422A6E45E6D483EE56 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		E67633045DCD0C4A7592145E /* FlutterClawWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlutterClawWidgetsBundle.swift; sourceTree = "<group>"; };
 		E8F901A21CF9000F007C117F /* FlutterClawWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = FlutterClawWidgets.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -186,7 +186,6 @@
 				2B946C50BD6AABFD49BAD9F0 /* Pods */,
 				BFA3A4F6E2461C5B6B09DCF7 /* Frameworks */,
 				8815EBA73A36F20615329A54 /* FlutterClawWidgets */,
-				D81097422A6E45E6D483EE56 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -203,6 +202,8 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				AFA37CCC2FB1DCD5009966BA /* RunnerDebug.entitlements */,
+				AFA37CCB2FB1DC1B009966BA /* RunnerRelease.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -356,7 +357,6 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-				01C43DB862B4B81C81EC9323 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -607,14 +607,14 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 6YUUTPLNPS;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -630,12 +630,12 @@
 				CODE_SIGN_ENTITLEMENTS = FlutterClawWidgets/FlutterClawWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6YUUTPLNPS;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FlutterClawWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw.FlutterClawWidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection.FlutterClawWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -651,9 +651,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -669,9 +670,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -685,9 +687,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -702,12 +705,12 @@
 				CODE_SIGN_ENTITLEMENTS = FlutterClawWidgets/FlutterClawWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6YUUTPLNPS;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FlutterClawWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw.FlutterClawWidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection.FlutterClawWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -834,16 +837,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Runner/RunnerDebug.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 6YUUTPLNPS;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -858,16 +861,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Runner/RunnerRelease.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 6YUUTPLNPS;
+				DEVELOPMENT_TEAM = A2YF6JQSXD;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.flutterclaw.flutterclaw;
+				PRODUCT_BUNDLE_IDENTIFIER = chinafix.mobile.detection;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
