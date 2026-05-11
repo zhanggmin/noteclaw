@@ -1,6 +1,4 @@
-/// Channel adapter system for FlutterClaw.
-///
-/// Exports interfaces, adapters, and router.
+// Channel adapter system exports.
 
 export 'channel_interface.dart';
 export 'discord.dart';

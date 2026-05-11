@@ -604,10 +604,6 @@ class _UnifiedAgentsScreenState extends ConsumerState<UnifiedAgentsScreen> {
     );
   }
 
-  Widget _buildSkillsCard(BuildContext context, ThemeData theme, ColorScheme colors) {
-    return _buildSkillsCardWithCallback(context, theme, colors, null);
-  }
-
   Widget _buildSkillsCardWithCallback(
     BuildContext context,
     ThemeData theme,

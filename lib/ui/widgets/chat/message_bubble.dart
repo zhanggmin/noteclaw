@@ -651,7 +651,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
                         ),
                       ),
                       builders: {'pre': CopyableCodeBlockBuilder(context)},
-                      onTapLink: (_, href, __) async {
+                      onTapLink: (text, href, title) async {
                         if (href != null) {
                           final uri = Uri.tryParse(href);
                           if (uri != null) await launchUrl(uri);
@@ -1253,4 +1253,3 @@ class _InteractiveSelectState extends State<_InteractiveSelect> {
     );
   }
 }
-

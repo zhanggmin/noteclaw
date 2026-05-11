@@ -1,3 +1,5 @@
+// ignore_for_file: experimental_member_use
+
 /// Background audio service using audio_service + just_audio.
 ///
 /// Provides lock-screen media controls and system media notifications.

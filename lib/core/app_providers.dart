@@ -2546,7 +2546,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
           if (event.toolResultChunk != null) {
             final chunk = event.toolResultChunk!;
             final isClear = chunk.startsWith('\x00CLEAR\x00');
-            print('[ChatNotifier] toolResultChunk len=${chunk.length} isClear=$isClear');
+            debugPrint('[ChatNotifier] toolResultChunk len=${chunk.length} isClear=$isClear');
             final updated = List<ChatMessage>.from(state);
             bool found = false;
             for (var i = updated.length - 1; i >= 0; i--) {
@@ -2559,17 +2559,19 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
                 } else {
                   newText = (updated[i].toolResultText ?? '') + chunk;
                 }
-                print('[ChatNotifier] → updating pill at i=$i, newText len=${newText.length}');
+                debugPrint('[ChatNotifier] → updating pill at i=$i, newText len=${newText.length}');
                 updated[i] = updated[i].copyWith(toolResultText: newText);
                 break;
               }
             }
-            if (!found) print('[ChatNotifier] ⚠ no streaming pill found for chunk!');
+            if (!found) {
+              debugPrint('[ChatNotifier] ⚠ no streaming pill found for chunk!');
+            }
             state = updated;
           }
 
           if (event.toolResult != null) {
-            print('[ChatNotifier] toolResult len=${event.toolResult!.length}');
+            debugPrint('[ChatNotifier] toolResult len=${event.toolResult!.length}');
             final updated = List<ChatMessage>.from(state);
             bool found = false;
             for (var i = updated.length - 1; i >= 0; i--) {
@@ -2581,7 +2583,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
                 // Fall back to event.toolResult if no CLEAR chunk arrived.
                 final existing = updated[i].toolResultText;
                 final useExisting = existing != null && existing.isNotEmpty;
-                print('[ChatNotifier] → marking pill at i=$i as done, useExisting=$useExisting existing=${existing?.length}');
+                debugPrint('[ChatNotifier] → marking pill at i=$i as done, useExisting=$useExisting existing=${existing?.length}');
                 updated[i] = updated[i].copyWith(
                   isStreaming: false,
                   toolResultText: useExisting ? existing : event.toolResult,
@@ -2589,7 +2591,9 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
                 break;
               }
             }
-            if (!found) print('[ChatNotifier] ⚠ no streaming pill found for toolResult!');
+            if (!found) {
+              debugPrint('[ChatNotifier] ⚠ no streaming pill found for toolResult!');
+            }
             state = updated;
           }
 

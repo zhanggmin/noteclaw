@@ -1,3 +1,5 @@
+// ignore_for_file: experimental_member_use
+
 /// Short sound effects for live call lifecycle events (connect / end).
 ///
 /// Tones are generated programmatically as raw PCM — no asset files needed.

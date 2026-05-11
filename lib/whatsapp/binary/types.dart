@@ -3,12 +3,12 @@ import 'dart:typed_data';
 /// The binary node WhatsApp uses internally for communication.
 ///
 /// Manipulated solely as a data object (no methods) for easy serialization.
-/// Port of Baileys WABinary/types.ts.
+/// Port of Baileys WABinary types.
 class BinaryNode {
   final String tag;
   final Map<String, String> attrs;
 
-  /// Content can be: List<BinaryNode>, String, or Uint8List.
+  /// Content can be a list of binary nodes, a String, or Uint8List.
   final Object? content;
 
   const BinaryNode({
