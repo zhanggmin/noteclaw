@@ -10,6 +10,7 @@ import 'package:flutterclaw/services/ios_gateway_service.dart';
 import 'package:flutterclaw/services/analytics_service.dart';
 import 'package:flutterclaw/ui/screens/chat_screen.dart';
 import 'package:flutterclaw/ui/screens/channels_screen.dart';
+import 'package:flutterclaw/ui/screens/blinko_notes_screen.dart';
 import 'package:flutterclaw/ui/screens/unified_agents_screen.dart';
 import 'package:flutterclaw/ui/screens/settings_screen.dart';
 
@@ -91,6 +92,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   static const _screens = <Widget>[
     ChatScreen(),
+    BlinkoNotesScreen(),
     ChannelsScreen(),
     UnifiedAgentsScreen(),
     SettingsScreen(),
@@ -112,9 +114,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           analytics.logTap(
             name: switch (i) {
               0 => 'bottom_nav_chat',
-              1 => 'bottom_nav_channels',
-              2 => 'bottom_nav_agents',
-              3 => 'bottom_nav_settings',
+              1 => 'bottom_nav_notes',
+              2 => 'bottom_nav_channels',
+              3 => 'bottom_nav_agents',
+              4 => 'bottom_nav_settings',
               _ => 'bottom_nav_unknown',
             },
           );
@@ -124,6 +127,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.chat_outlined),
             selectedIcon: const Icon(Icons.chat),
             label: context.l10n.chat,
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.sticky_note_2_outlined),
+            selectedIcon: Icon(Icons.sticky_note_2),
+            label: 'Notes',
           ),
           NavigationDestination(
             icon: const Icon(Icons.hub_outlined),
