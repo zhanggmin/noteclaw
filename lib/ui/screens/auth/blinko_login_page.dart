@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutterclaw/services/blinko_auth_service.dart';
 import 'package:flutterclaw/services/secure_key_store.dart';
 
@@ -13,8 +14,10 @@ class BlinkoLoginPage extends StatefulWidget {
 
 class _BlinkoLoginPageState extends State<BlinkoLoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _baseUrlCtl = TextEditingController(text: 'https://blinko.apidocumentation.com');
-  final _emailCtl = TextEditingController();
+  final _baseUrlCtl = TextEditingController(
+    text: BlinkoAuthService.defaultBaseUrl,
+  );
+  final _nameCtl = TextEditingController();
   final _passwordCtl = TextEditingController();
 
   bool _submitting = false;
@@ -24,7 +27,7 @@ class _BlinkoLoginPageState extends State<BlinkoLoginPage> {
   @override
   void dispose() {
     _baseUrlCtl.dispose();
-    _emailCtl.dispose();
+    _nameCtl.dispose();
     _passwordCtl.dispose();
     super.dispose();
   }
@@ -38,21 +41,38 @@ class _BlinkoLoginPageState extends State<BlinkoLoginPage> {
     });
 
     try {
-      final service = BlinkoAuthService(baseUrl: _baseUrlCtl.text.trim());
+      final baseUrl = BlinkoAuthService.normalizeBaseUrl(_baseUrlCtl.text);
+      final name = _nameCtl.text.trim();
+      if (kDebugMode) {
+        debugPrint('[BlinkoLoginPage] submit login');
+        debugPrint('[BlinkoLoginPage] baseUrl: $baseUrl');
+        debugPrint('[BlinkoLoginPage] name: $name');
+      }
+
+      final service = BlinkoAuthService(baseUrl: baseUrl);
       final result = await service.login(
-        email: _emailCtl.text.trim(),
+        name: name,
         password: _passwordCtl.text,
       );
 
       await SecureKeyStore.saveApiKey('blinko', result.token);
-      await SecureKeyStore.saveSecret('blinko_base_url', _baseUrlCtl.text.trim());
+      await SecureKeyStore.saveSecret('blinko_base_url', baseUrl);
+      if (kDebugMode) {
+        debugPrint('[BlinkoLoginPage] login success, token saved');
+      }
 
       if (!mounted) return;
-      widget.onLoginSuccess?.call();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login successful, token saved.')),
       );
+      widget.onLoginSuccess?.call();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[BlinkoLoginPage] login failed: $e');
+      }
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
@@ -76,6 +96,7 @@ class _BlinkoLoginPageState extends State<BlinkoLoginPage> {
                   labelText: 'Base URL',
                   border: OutlineInputBorder(),
                   hintText: 'https://your-blinko-host.com',
+                  helperText: '填写 Blinko 实例根地址，不要填写文档地址',
                 ),
                 validator: (v) {
                   final value = (v ?? '').trim();
@@ -89,13 +110,14 @@ class _BlinkoLoginPageState extends State<BlinkoLoginPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _emailCtl,
+                controller: _nameCtl,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: '邮箱',
+                  labelText: '账号 / 邮箱',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? '请输入邮箱' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? '请输入账号或邮箱' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -105,7 +127,9 @@ class _BlinkoLoginPageState extends State<BlinkoLoginPage> {
                   labelText: '密码',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(
+                      _obscure ? Icons.visibility : Icons.visibility_off,
+                    ),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
