@@ -8,8 +8,8 @@ import 'package:flutterclaw/l10n/l10n_extension.dart';
 import 'package:flutterclaw/services/background_service.dart';
 import 'package:flutterclaw/services/ios_gateway_service.dart';
 import 'package:flutterclaw/services/analytics_service.dart';
+import 'package:flutterclaw/features/life_management/presentation/life_home_screen.dart';
 import 'package:flutterclaw/ui/screens/chat_screen.dart';
-import 'package:flutterclaw/ui/screens/channels_screen.dart';
 import 'package:flutterclaw/ui/screens/blinko_notes_screen.dart';
 import 'package:flutterclaw/ui/screens/unified_agents_screen.dart';
 import 'package:flutterclaw/ui/screens/settings_screen.dart';
@@ -78,7 +78,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     } else {
       if (Platform.isAndroid) {
-        await ref.read(notificationServiceProvider).ensureAndroidNotificationPermission();
+        await ref
+            .read(notificationServiceProvider)
+            .ensureAndroidNotificationPermission();
       }
       await BackgroundService.startService();
       if (mounted) {
@@ -93,7 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const _screens = <Widget>[
     ChatScreen(),
     BlinkoNotesScreen(),
-    ChannelsScreen(),
+    LifeHomeScreen(),
     UnifiedAgentsScreen(),
     SettingsScreen(),
   ];
@@ -103,10 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final analytics = ref.read(analyticsServiceProvider);
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) {
@@ -115,7 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             name: switch (i) {
               0 => 'bottom_nav_chat',
               1 => 'bottom_nav_notes',
-              2 => 'bottom_nav_channels',
+              2 => 'bottom_nav_life',
               3 => 'bottom_nav_agents',
               4 => 'bottom_nav_settings',
               _ => 'bottom_nav_unknown',
@@ -134,9 +133,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             label: 'Notes',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.hub_outlined),
-            selectedIcon: const Icon(Icons.hub),
-            label: context.l10n.channels,
+            icon: const Icon(Icons.event_note_outlined),
+            selectedIcon: const Icon(Icons.event_note),
+            label: 'Life',
           ),
           NavigationDestination(
             icon: const Icon(Icons.group_outlined),

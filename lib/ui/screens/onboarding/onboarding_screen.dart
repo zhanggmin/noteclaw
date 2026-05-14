@@ -119,8 +119,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           .map((a) => a.copyWith(modelName: modelEntry.modelName))
           .toList();
 
-      // Gateway uses defaults (host:port:autoStart=true); user can adjust in Settings.
-      // Channels keep existing config — user configures them from the Channels screen.
+      // Gateway uses defaults (host:port:autoStart=false); user can adjust in Settings.
+      // Channels keep existing config — user configures them from Settings.
       var newConfig = configManager.config.copyWith(
         modelList: [modelEntry],
         providerCredentials: {_selectedProviderId!: credential},
@@ -165,7 +165,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // Start channel adapters (Telegram, Discord) now that config is saved
       await ref.read(channelStartupProvider.future);
 
-      // Start gateway with default config (autoStart=true)
+      // Start gateway only when the user has enabled auto-start.
       final gwConfig = configManager.config.gateway;
       if (gwConfig.autoStart) {
         if (Platform.isAndroid) {

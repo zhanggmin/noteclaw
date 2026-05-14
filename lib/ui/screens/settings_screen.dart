@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutterclaw/core/app_providers.dart';
 import 'package:flutterclaw/core/package_info_provider.dart';
 import 'package:flutterclaw/l10n/l10n_extension.dart';
+import 'package:flutterclaw/ui/screens/channels_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/about_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/gateway_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/mcp_servers_screen.dart';
@@ -42,8 +43,7 @@ class SettingsScreen extends ConsumerWidget {
             subtitleColor: hasModels ? null : colors.error,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const ProvidersModelsScreen()),
+              MaterialPageRoute(builder: (_) => const ProvidersModelsScreen()),
             ),
           ),
           _SettingsTile(
@@ -55,6 +55,15 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const GatewayScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.hub_outlined,
+            title: context.l10n.channels,
+            subtitle: 'Telegram, Discord, Slack, Signal, WhatsApp',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChannelsScreen()),
             ),
           ),
           _SettingsTile(
@@ -81,8 +90,7 @@ class SettingsScreen extends ConsumerWidget {
                 : context.l10n.toolsDisabledCount(config.tools.disabled.length),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const ToolPoliciesScreen()),
+              MaterialPageRoute(builder: (_) => const ToolPoliciesScreen()),
             ),
           ),
           _SettingsTile(
@@ -91,24 +99,23 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: ref.watch(unsafeModeProvider)
                 ? 'Security checks disabled ⚠️'
                 : 'Security checks active',
-            subtitleColor: ref.watch(unsafeModeProvider)
-                ? colors.error
-                : null,
+            subtitleColor: ref.watch(unsafeModeProvider) ? colors.error : null,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const SecuritySettingsScreen()),
+              MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
             ),
           ),
           _SettingsTile(
             icon: Icons.info_outline,
             title: context.l10n.about,
-            subtitle: ref.watch(packageInfoProvider).when(
+            subtitle: ref
+                .watch(packageInfoProvider)
+                .when(
                   data: (info) => context.l10n.appVersionSubtitle(
-                        context.l10n.appTitle,
-                        info.version,
-                        info.buildNumber,
-                      ),
+                    context.l10n.appTitle,
+                    info.version,
+                    info.buildNumber,
+                  ),
                   loading: () => context.l10n.appTitle,
                   error: (_, _) => context.l10n.appTitle,
                 ),
@@ -142,8 +149,7 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
         width: 40,
         height: 40,
@@ -153,9 +159,12 @@ class _SettingsTile extends StatelessWidget {
         ),
         child: Icon(icon, color: theme.colorScheme.primary, size: 20),
       ),
-      title: Text(title,
-          style: theme.textTheme.titleSmall
-              ?.copyWith(fontWeight: FontWeight.w600)),
+      title: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       subtitle: Text(
         subtitle,
         style: theme.textTheme.bodySmall?.copyWith(

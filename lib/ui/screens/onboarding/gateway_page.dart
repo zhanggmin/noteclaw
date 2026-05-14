@@ -23,7 +23,7 @@ class GatewayPage extends StatefulWidget {
     super.key,
     this.initialHost = '127.0.0.1',
     this.initialPort = 18789,
-    this.initialAutoStart = true,
+    this.initialAutoStart = false,
     required this.onChanged,
   });
 
@@ -53,13 +53,15 @@ class _GatewayPageState extends State<GatewayPage> {
   }
 
   void _emitChange() {
-    widget.onChanged(GatewayPageResult(
-      host: _hostController.text.trim().isEmpty
-          ? '127.0.0.1'
-          : _hostController.text.trim(),
-      port: int.tryParse(_portController.text.trim()) ?? 18789,
-      autoStart: _autoStart,
-    ));
+    widget.onChanged(
+      GatewayPageResult(
+        host: _hostController.text.trim().isEmpty
+            ? '127.0.0.1'
+            : _hostController.text.trim(),
+        port: int.tryParse(_portController.text.trim()) ?? 18789,
+        autoStart: _autoStart,
+      ),
+    );
   }
 
   @override
@@ -137,9 +139,7 @@ class _GatewayPageState extends State<GatewayPage> {
 
         SwitchListTile(
           title: Text(context.l10n.autoStartGateway),
-          subtitle: Text(
-            context.l10n.autoStartGatewayDesc,
-          ),
+          subtitle: Text(context.l10n.autoStartGatewayDesc),
           value: _autoStart,
           onChanged: (val) {
             setState(() => _autoStart = val);
