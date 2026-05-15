@@ -14,6 +14,18 @@ final lifeManagementRepositoryProvider =
       return repository;
     });
 
+final lifeManagementServiceProvider = FutureProvider<LifeManagementService>((
+  ref,
+) async {
+  final repository = await ref.watch(lifeManagementRepositoryProvider.future);
+  return LifeManagementService(
+    repository: repository,
+    reminderScheduler: NotificationLifeReminderScheduler(
+      service: ref.watch(notificationServiceProvider),
+    ),
+  );
+});
+
 final lifeHabitsProvider = FutureProvider<List<Habit>>((ref) async {
   final repository = await ref.watch(lifeManagementRepositoryProvider.future);
   return repository.loadHabits();
@@ -36,5 +48,6 @@ final lifeHabitCheckInsProvider =
       final repository = await ref.watch(
         lifeManagementRepositoryProvider.future,
       );
-      return repository.loadHabitCheckIns(habitId: habitId, limit: 5);
+      final from = DateTime.now().subtract(const Duration(days: 45));
+      return repository.loadHabitCheckIns(habitId: habitId, from: from);
     });

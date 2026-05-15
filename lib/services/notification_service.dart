@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logging/logging.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 final _log = Logger('flutterclaw.notification_service');
 
@@ -22,6 +23,7 @@ class NotificationIds {
 class NotificationChannels {
   static const String persistent = 'flutterclaw_foreground';
   static const String messages = 'flutterclaw_messages';
+  static const String reminders = 'flutterclaw_reminders';
 }
 
 /// Wrapper around flutter_local_notifications.
@@ -57,9 +59,9 @@ class NotificationService {
       requestSoundPermission: true,
       // Foreground presentation — set both old (presentAlert) and new (presentBanner)
       // flags so it works on all iOS versions supported by Flutter.
-      defaultPresentAlert: true,   // iOS <14
-      defaultPresentBanner: true,  // iOS 14+
-      defaultPresentList: true,    // iOS 14+ — also appears in notification centre
+      defaultPresentAlert: true, // iOS <14
+      defaultPresentBanner: true, // iOS 14+
+      defaultPresentList: true, // iOS 14+ — also appears in notification centre
       defaultPresentBadge: true,
       defaultPresentSound: true,
     );
@@ -100,8 +102,10 @@ class NotificationService {
   }
 
   Future<void> _requestIOSPermissions() async {
-    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final iosPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (iosPlugin == null) return;
     final granted = await iosPlugin.requestPermissions(
       alert: true,
@@ -112,18 +116,21 @@ class NotificationService {
   }
 
   Future<void> _createAndroidChannels() async {
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin == null) return;
 
-    await androidPlugin
-        .createNotificationChannel(const AndroidNotificationChannel(
-      NotificationChannels.persistent,
-      'FlutterClaw Service',
-      description: 'Persistent notification when gateway is running',
-      importance: Importance.low,
-      playSound: false,
-    ));
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        NotificationChannels.persistent,
+        'FlutterClaw Service',
+        description: 'Persistent notification when gateway is running',
+        importance: Importance.low,
+        playSound: false,
+      ),
+    );
 
     await androidPlugin.createNotificationChannel(
       const AndroidNotificationChannel(
@@ -131,11 +138,23 @@ class NotificationService {
         'Messages',
         description: 'Incoming chat messages',
         importance: Importance.defaultImportance,
-    ));
+      ),
+    );
+
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        NotificationChannels.reminders,
+        'Reminders',
+        description: 'Scheduled reminders',
+        importance: Importance.high,
+      ),
+    );
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    _log.fine('Notification tapped: id=${response.id} payload=${response.payload}');
+    _log.fine(
+      'Notification tapped: id=${response.id} payload=${response.payload}',
+    );
     final payload = response.payload;
     if (payload != null && payload.isNotEmpty) {
       _tapController.add(payload);
@@ -178,8 +197,9 @@ class NotificationService {
       await initialize();
       if (!_initialized) {
         throw StateError(
-            'NotificationService not initialized. '
-            'Check that notification permissions are granted.');
+          'NotificationService not initialized. '
+          'Check that notification permissions are granted.',
+        );
       }
     }
 
@@ -199,9 +219,9 @@ class NotificationService {
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(
-          presentAlert: true,   // iOS <14
-          presentBanner: true,  // iOS 14+
-          presentList: true,    // iOS 14+ — notification centre
+          presentAlert: true, // iOS <14
+          presentBanner: true, // iOS 14+
+          presentList: true, // iOS 14+ — notification centre
           presentBadge: true,
           presentSound: true,
         ),
@@ -212,7 +232,10 @@ class NotificationService {
   /// Show a transient tool-status notification while a tool is running in background.
   /// Always uses the same ID so it is replaced (not stacked) for each tool call.
   /// Silent — no sound or badge.
-  Future<void> showToolStatusNotification(String agentName, String toolLabel) async {
+  Future<void> showToolStatusNotification(
+    String agentName,
+    String toolLabel,
+  ) async {
     if (!_initialized) return;
     await _plugin.show(
       id: NotificationIds.toolStatus,
@@ -245,17 +268,136 @@ class NotificationService {
     await _plugin.cancel(id: id);
   }
 
+  /// Schedule a one-off reminder notification.
+  Future<void> scheduleOneOffReminder({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledAt,
+    String? payload,
+  }) async {
+    await _ensureInitializedForScheduling();
+    if (scheduledAt.isBefore(DateTime.now())) {
+      await cancelNotification(id);
+      return;
+    }
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: tz.TZDateTime.from(scheduledAt, tz.local),
+      notificationDetails: _reminderNotificationDetails,
+      payload: payload,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  /// Schedule a daily reminder notification at [hour]:[minute].
+  Future<void> scheduleDailyReminder({
+    required int id,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+    String? payload,
+  }) async {
+    await _ensureInitializedForScheduling();
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: _nextTime(hour, minute),
+      notificationDetails: _reminderNotificationDetails,
+      payload: payload,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  /// Schedule a weekly reminder notification on [weekday] at [hour]:[minute].
+  Future<void> scheduleWeeklyReminder({
+    required int id,
+    required String title,
+    required String body,
+    required int weekday,
+    required int hour,
+    required int minute,
+    String? payload,
+  }) async {
+    await _ensureInitializedForScheduling();
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: _nextWeekdayTime(weekday, hour, minute),
+      notificationDetails: _reminderNotificationDetails,
+      payload: payload,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
+  }
+
   /// Ensures the app can show notifications on Android (API 33+).
   /// Call before starting the foreground service so the persistent notification is visible.
   /// No-op on other platforms.
   Future<void> ensureAndroidNotificationPermission() async {
     if (!Platform.isAndroid) return;
     await initialize();
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     final granted = await androidPlugin?.requestNotificationsPermission();
     if (granted != true) {
       _log.warning('Android notification permission not granted');
     }
+  }
+
+  Future<void> _ensureInitializedForScheduling() async {
+    if (!_initialized) await initialize();
+    if (!_initialized) {
+      throw StateError('NotificationService not initialized.');
+    }
+  }
+
+  NotificationDetails get _reminderNotificationDetails =>
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          NotificationChannels.reminders,
+          'Reminders',
+          channelDescription: 'Scheduled reminders',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBanner: true,
+          presentList: true,
+          presentSound: true,
+        ),
+      );
+
+  tz.TZDateTime _nextTime(int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  tz.TZDateTime _nextWeekdayTime(int weekday, int hour, int minute) {
+    var scheduled = _nextTime(hour, minute);
+    while (scheduled.weekday != weekday) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
   }
 }

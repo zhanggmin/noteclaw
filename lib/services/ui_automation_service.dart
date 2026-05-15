@@ -31,14 +31,13 @@ class UiAutomationService {
     double x2,
     double y2, {
     int durationMs = 300,
-  }) =>
-      _invoke('ui_swipe', {
-        'x1': x1,
-        'y1': y1,
-        'x2': x2,
-        'y2': y2,
-        'duration_ms': durationMs,
-      });
+  }) => _invoke('ui_swipe', {
+    'x1': x1,
+    'y1': y1,
+    'x2': x2,
+    'y2': y2,
+    'duration_ms': durationMs,
+  });
 
   /// Type text into the currently focused input field.
   Future<Map<String, dynamic>> typeText(String text) =>
@@ -49,8 +48,7 @@ class UiAutomationService {
   Future<Map<String, dynamic>> findElements({
     String? query,
     String by = 'all',
-  }) =>
-      _invoke('ui_find_elements', {'query': query, 'by': by});
+  }) => _invoke('ui_find_elements', {'query': query, 'by': by});
 
   /// Find an element matching [query] (searched by [by]) and click it.
   Future<Map<String, dynamic>> clickElement(String query, String by) =>
@@ -68,11 +66,12 @@ class UiAutomationService {
   Future<Map<String, dynamic>> deviceInfo() => _invoke('ui_device_info');
 
   /// Launch an app by package name or search by label.
-  Future<Map<String, dynamic>> launchApp({String? package_, String? search}) =>
-      _invoke('ui_launch_app', {
-        if (package_ != null) 'package': package_,
-        if (search != null) 'search': search,
-      });
+  Future<Map<String, dynamic>> launchApp({String? package_, String? search}) {
+    final args = <String, dynamic>{};
+    if (package_ != null) args['package'] = package_;
+    if (search != null) args['search'] = search;
+    return _invoke('ui_launch_app', args);
+  }
 
   /// Fire an Android intent with optional action, URI, type, package, extras.
   Future<Map<String, dynamic>> launchIntent({
@@ -81,14 +80,15 @@ class UiAutomationService {
     String? type,
     String? package_,
     Map<String, dynamic>? extras,
-  }) =>
-      _invoke('ui_launch_intent', {
-        if (action != null) 'action': action,
-        if (uri != null) 'uri': uri,
-        if (type != null) 'type': type,
-        if (package_ != null) 'package': package_,
-        if (extras != null) 'extras': extras,
-      });
+  }) {
+    final args = <String, dynamic>{};
+    if (action != null) args['action'] = action;
+    if (uri != null) args['uri'] = uri;
+    if (type != null) args['type'] = type;
+    if (package_ != null) args['package'] = package_;
+    if (extras != null) args['extras'] = extras;
+    return _invoke('ui_launch_intent', args);
+  }
 
   /// List exported activities and intent filters of a specific app.
   Future<Map<String, dynamic>> appIntents(String package_) =>
@@ -98,11 +98,11 @@ class UiAutomationService {
   Future<Map<String, dynamic>> listApps({
     bool launchableOnly = true,
     String? search,
-  }) =>
-      _invoke('ui_list_apps', {
-        'launchable_only': launchableOnly,
-        if (search != null) 'search': search,
-      });
+  }) {
+    final args = <String, dynamic>{'launchable_only': launchableOnly};
+    if (search != null) args['search'] = search;
+    return _invoke('ui_list_apps', args);
+  }
 
   // ─── Internal ──────────────────────────────────────────────────────────────
 

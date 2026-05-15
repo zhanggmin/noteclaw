@@ -5,10 +5,8 @@
 library;
 
 import 'package:flutter/services.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutterclaw/services/notification_service.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'registry.dart';
 
 class DeviceStatusTool extends Tool {
@@ -20,10 +18,7 @@ class DeviceStatusTool extends Tool {
       'Return device status: battery level, charging state, connectivity.';
 
   @override
-  Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {},
-      };
+  Map<String, dynamic> get parameters => {'type': 'object', 'properties': {}};
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -47,8 +42,8 @@ class SendNotificationTool extends Tool {
   SendNotificationTool({
     required NotificationService notificationService,
     String Function()? sessionKeyGetter,
-  })  : _notificationService = notificationService,
-        _sessionKeyGetter = sessionKeyGetter;
+  }) : _notificationService = notificationService,
+       _sessionKeyGetter = sessionKeyGetter;
 
   @override
   String get name => 'send_notification';
@@ -68,25 +63,23 @@ class SendNotificationTool extends Tool {
 
   @override
   Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {
-          'title': {
-            'type': 'string',
-            'description': 'Notification title.',
-          },
-          'body': {
-            'type': 'string',
-            'description': 'Notification body text. Keep concise (under 200 chars).',
-          },
-          'session_key': {
-            'type': 'string',
-            'description':
-                'Session key to open when the notification is tapped '
-                '(e.g. "cron:abc123"). Use the session_key from your task prompt.',
-          },
-        },
-        'required': ['title', 'body'],
-      };
+    'type': 'object',
+    'properties': {
+      'title': {'type': 'string', 'description': 'Notification title.'},
+      'body': {
+        'type': 'string',
+        'description':
+            'Notification body text. Keep concise (under 200 chars).',
+      },
+      'session_key': {
+        'type': 'string',
+        'description':
+            'Session key to open when the notification is tapped '
+            '(e.g. "cron:abc123"). Use the session_key from your task prompt.',
+      },
+    },
+    'required': ['title', 'body'],
+  };
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -126,9 +119,7 @@ class ScheduleReminderTool extends Tool {
   final NotificationService _notificationService;
 
   ScheduleReminderTool({required NotificationService notificationService})
-      : _notificationService = notificationService;
-
-  static final _plugin = FlutterLocalNotificationsPlugin();
+    : _notificationService = notificationService;
 
   @override
   String get name => 'schedule_reminder';
@@ -142,23 +133,23 @@ class ScheduleReminderTool extends Tool {
 
   @override
   Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {
-          'title': {'type': 'string', 'description': 'Reminder title.'},
-          'body': {'type': 'string', 'description': 'Reminder message body.'},
-          'datetime': {
-            'type': 'string',
-            'description':
-                'ISO 8601 datetime when the reminder should fire, e.g. "2025-03-14T09:00:00".',
-          },
-          'id': {
-            'type': 'integer',
-            'description':
-                'Optional integer ID (1000–99999). Auto-generated if omitted.',
-          },
-        },
-        'required': ['title', 'body', 'datetime'],
-      };
+    'type': 'object',
+    'properties': {
+      'title': {'type': 'string', 'description': 'Reminder title.'},
+      'body': {'type': 'string', 'description': 'Reminder message body.'},
+      'datetime': {
+        'type': 'string',
+        'description':
+            'ISO 8601 datetime when the reminder should fire, e.g. "2025-03-14T09:00:00".',
+      },
+      'id': {
+        'type': 'integer',
+        'description':
+            'Optional integer ID (1000–99999). Auto-generated if omitted.',
+      },
+    },
+    'required': ['title', 'body', 'datetime'],
+  };
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -178,31 +169,16 @@ class ScheduleReminderTool extends Tool {
       return ToolResult.error('datetime must be in the future');
     }
 
-    final id = (args['id'] as num?)?.toInt() ??
+    final id =
+        (args['id'] as num?)?.toInt() ??
         (1000 + scheduledDate.millisecondsSinceEpoch.abs() % 90000);
 
     try {
-      await _notificationService.initialize();
-      await _plugin.zonedSchedule(
+      await _notificationService.scheduleOneOffReminder(
         id: id,
         title: title,
         body: body,
-        scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'flutterclaw_reminders',
-            'Reminders',
-            channelDescription: 'Scheduled reminders from the AI agent',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBanner: true,
-            presentSound: true,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        scheduledAt: scheduledDate,
       );
 
       return ToolResult.success(
@@ -219,7 +195,7 @@ class CancelReminderTool extends Tool {
   final NotificationService _notificationService;
 
   CancelReminderTool({required NotificationService notificationService})
-      : _notificationService = notificationService;
+    : _notificationService = notificationService;
 
   @override
   String get name => 'cancel_reminder';
@@ -231,15 +207,12 @@ class CancelReminderTool extends Tool {
 
   @override
   Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {
-          'id': {
-            'type': 'integer',
-            'description': 'The reminder ID to cancel.',
-          },
-        },
-        'required': ['id'],
-      };
+    'type': 'object',
+    'properties': {
+      'id': {'type': 'integer', 'description': 'The reminder ID to cancel.'},
+    },
+    'required': ['id'],
+  };
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -266,10 +239,7 @@ class ClipboardReadTool extends Tool {
       'Returns the clipboard text, or an empty string if clipboard is empty.';
 
   @override
-  Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {},
-      };
+  Map<String, dynamic> get parameters => {'type': 'object', 'properties': {}};
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -295,15 +265,15 @@ class ClipboardWriteTool extends Tool {
 
   @override
   Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {
-          'text': {
-            'type': 'string',
-            'description': 'The text to copy to clipboard.',
-          },
-        },
-        'required': ['text'],
-      };
+    'type': 'object',
+    'properties': {
+      'text': {
+        'type': 'string',
+        'description': 'The text to copy to clipboard.',
+      },
+    },
+    'required': ['text'],
+  };
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -332,19 +302,16 @@ class ShareContentTool extends Tool {
 
   @override
   Map<String, dynamic> get parameters => {
-        'type': 'object',
-        'properties': {
-          'text': {
-            'type': 'string',
-            'description': 'The text to share.',
-          },
-          'subject': {
-            'type': 'string',
-            'description': 'Optional subject line (used by Mail and similar apps).',
-          },
-        },
-        'required': ['text'],
-      };
+    'type': 'object',
+    'properties': {
+      'text': {'type': 'string', 'description': 'The text to share.'},
+      'subject': {
+        'type': 'string',
+        'description': 'Optional subject line (used by Mail and similar apps).',
+      },
+    },
+    'required': ['text'],
+  };
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> args) async {
@@ -354,10 +321,7 @@ class ShareContentTool extends Tool {
     if (text.isEmpty) return ToolResult.error('text is required');
 
     try {
-      final result = await Share.share(
-        text,
-        subject: subject,
-      );
+      final result = await Share.share(text, subject: subject);
       final status = switch (result.status) {
         ShareResultStatus.success => 'shared',
         ShareResultStatus.dismissed => 'dismissed',
@@ -369,4 +333,3 @@ class ShareContentTool extends Tool {
     }
   }
 }
-

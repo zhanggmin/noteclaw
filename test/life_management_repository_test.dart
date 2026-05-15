@@ -132,4 +132,24 @@ void main() {
     final all = await repository.loadRecords(includeArchived: true);
     expect(all.single.status, LifeRecordStatus.deleted);
   });
+
+  test('serializes and restores record reminder', () {
+    final record = LifeRecord(
+      id: 'record-1',
+      templateId: 'haircut',
+      title: '理发',
+      reminder: ReminderRule(
+        kind: ReminderKind.once,
+        scheduledAt: DateTime.utc(2026, 6, 13, 9),
+      ),
+      occurredAt: DateTime.utc(2026, 5, 14),
+      createdAt: DateTime.utc(2026, 5, 14),
+      updatedAt: DateTime.utc(2026, 5, 14),
+    );
+
+    final restored = LifeRecord.fromJson(record.toJson());
+
+    expect(restored.reminder?.kind, ReminderKind.once);
+    expect(restored.reminder?.scheduledAt, DateTime.utc(2026, 6, 13, 9));
+  });
 }

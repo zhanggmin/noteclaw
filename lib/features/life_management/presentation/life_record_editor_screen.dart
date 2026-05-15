@@ -21,7 +21,9 @@ class _LifeRecordEditorScreenState
   late final TextEditingController _titleController;
   late final TextEditingController _noteController;
   late DateTime _occurredAt;
+  DateTime? _reminderAt;
   String? _templateId;
+  bool _reminderEnabled = false;
   bool _saving = false;
 
   @override
@@ -32,6 +34,14 @@ class _LifeRecordEditorScreenState
     _titleController = TextEditingController(text: record?.title ?? '');
     _noteController = TextEditingController(text: record?.note ?? '');
     _occurredAt = record?.occurredAt ?? DateTime.now();
+    _reminderEnabled = record?.reminder?.enabled ?? false;
+    _reminderAt = record?.reminder?.scheduledAt;
+    if (record == null && widget.template?.defaultReminderDays != null) {
+      _reminderEnabled = true;
+      _reminderAt = _occurredAt.add(
+        Duration(days: widget.template!.defaultReminderDays!),
+      );
+    }
   }
 
   @override
@@ -91,13 +101,15 @@ class _LifeRecordEditorScreenState
               },
               onChanged: (value) {
                 if (value == null) return;
+                final template = templates.firstWhere(
+                  (item) => item.id == value,
+                );
                 setState(() {
                   _templateId = value;
                   if (_titleController.text.trim().isEmpty) {
-                    _titleController.text = templates
-                        .firstWhere((item) => item.id == value)
-                        .name;
+                    _titleController.text = template.name;
                   }
+                  _applyTemplateReminder(template);
                 });
               },
             ),
@@ -133,6 +145,36 @@ class _LifeRecordEditorScreenState
             trailing: const Icon(Icons.edit_outlined),
             onTap: _pickOccurredAt,
           ),
+          const SizedBox(height: 4),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('后续提醒'),
+            subtitle: Text(
+              _reminderEnabled && _reminderAt != null
+                  ? _formatDateTime(_reminderAt!)
+                  : '不提醒',
+            ),
+            value: _reminderEnabled,
+            onChanged: (value) {
+              setState(() {
+                _reminderEnabled = value;
+                _reminderAt ??= _defaultReminderAt(selectedTemplate);
+              });
+            },
+            secondary: const Icon(Icons.notifications_outlined),
+          ),
+          if (_reminderEnabled) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_outlined),
+              title: const Text('提醒时间'),
+              subtitle: Text(
+                _reminderAt == null ? '请选择提醒时间' : _formatDateTime(_reminderAt!),
+              ),
+              trailing: const Icon(Icons.edit_outlined),
+              onTap: () => _pickReminderAt(selectedTemplate),
+            ),
+          ],
           if (selectedTemplate != null) ...[
             const SizedBox(height: 16),
             Text('字段', style: Theme.of(context).textTheme.titleSmall),
@@ -226,9 +268,7 @@ class _LifeRecordEditorScreenState
     if (template == null) return;
     setState(() => _saving = true);
     try {
-      final repository = await ref.read(
-        lifeManagementRepositoryProvider.future,
-      );
+      final service = await ref.read(lifeManagementServiceProvider.future);
       final existing = widget.record;
       final fields = <String, dynamic>{};
       for (final field in template.fields) {
@@ -249,9 +289,15 @@ class _LifeRecordEditorScreenState
         occurredAt: _occurredAt,
         createdAt: existing?.createdAt,
         archivedAt: existing?.archivedAt,
-        reminder: existing?.reminder,
+        reminder: _reminderEnabled && _reminderAt != null
+            ? ReminderRule(
+                id: existing?.reminder?.id,
+                kind: ReminderKind.once,
+                scheduledAt: _reminderAt,
+              )
+            : null,
       );
-      await repository.saveRecord(record);
+      await service.saveRecord(record);
       ref.invalidate(lifeRecordsProvider);
       if (mounted) Navigator.pop(context);
     } finally {
@@ -286,6 +332,43 @@ class _LifeRecordEditorScreenState
         time.minute,
       );
     });
+  }
+
+  Future<void> _pickReminderAt(RecordTemplate? template) async {
+    final initial = _reminderAt ?? _defaultReminderAt(template);
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _reminderAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  void _applyTemplateReminder(RecordTemplate template) {
+    if (widget.record != null) return;
+    if (template.defaultReminderDays == null) return;
+    _reminderEnabled = true;
+    _reminderAt = _defaultReminderAt(template);
+  }
+
+  DateTime _defaultReminderAt(RecordTemplate? template) {
+    final days = template?.defaultReminderDays ?? 30;
+    return _occurredAt.add(Duration(days: days));
   }
 
   String _formatDateTime(DateTime value) {

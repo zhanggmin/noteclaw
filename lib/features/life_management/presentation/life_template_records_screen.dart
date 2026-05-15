@@ -94,13 +94,13 @@ class _TemplateRecordTile extends ConsumerWidget {
               record.title,
             );
             if (!confirmed) return;
-            final repository = await ref.read(
-              lifeManagementRepositoryProvider.future,
+            final service = await ref.read(
+              lifeManagementServiceProvider.future,
             );
             if (value == 'delete') {
-              await repository.deleteRecord(record.id);
+              await service.deleteRecord(record.id);
             } else {
-              await repository.archiveRecord(record.id);
+              await service.archiveRecord(record.id);
             }
             ref.invalidate(lifeRecordsProvider);
             if (!context.mounted) return;
