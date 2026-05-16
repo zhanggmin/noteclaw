@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.17+18
+version: 1.0.19+24
 
 environment:
   sdk: ^3.11.0
@@ -67,6 +67,7 @@ dependencies:
   audio_session: ^0.1.22
   just_audio: ^0.9.42
   audio_service: ^0.18.18
+  archive: ^4.0.9
   record: ^6.2.0
   speech_to_text: ^7.3.0
   flutter_tts: ^4.2.0
@@ -109,6 +110,9 @@ dependency_overrides:
   # Force timezone to 0.11.x — device_calendar declares ^0.9 but is compatible
   # with 0.11, and flutter_local_notifications 21 requires ^0.11.
   timezone: ^0.11.0
+  # path_provider_foundation 2.6.x uses objective_c native assets, which fail to
+  # resolve objective_c.framework on the iOS simulator with the current toolchain.
+  path_provider_foundation: 2.5.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
