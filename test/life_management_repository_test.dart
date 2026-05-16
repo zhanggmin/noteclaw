@@ -152,4 +152,72 @@ void main() {
     expect(restored.reminder?.kind, ReminderKind.once);
     expect(restored.reminder?.scheduledAt, DateTime.utc(2026, 6, 13, 9));
   });
+
+  test('saves todo lists and items', () async {
+    final list = await repository.saveTodoList(
+      TodoList(id: 'todo-list-1', title: '周末要做的10件事'),
+    );
+    await repository.saveTodoItem(TodoItem(listId: list.id, title: '整理书桌'));
+    await repository.saveTodoItem(TodoItem(listId: list.id, title: '买菜'));
+
+    final lists = await repository.loadTodoLists();
+    final items = await repository.loadTodoItems(listId: list.id);
+
+    expect(lists.single.title, '周末要做的10件事');
+    expect(items.map((item) => item.title), containsAll(['整理书桌', '买菜']));
+  });
+
+  test('completes and archives todo items', () async {
+    final list = await repository.saveTodoList(TodoList(title: '周末'));
+    final item = await repository.saveTodoItem(
+      TodoItem(listId: list.id, title: '洗衣服'),
+    );
+
+    final completed = await repository.completeTodoItem(item.id);
+    await repository.archiveTodoItem(item.id);
+
+    expect(completed?.status, TodoItemStatus.completed);
+    expect(completed?.completedAt, isNotNull);
+    expect(await repository.loadTodoItems(listId: list.id), isEmpty);
+    expect(
+      await repository.loadTodoItems(listId: list.id, includeArchived: true),
+      hasLength(1),
+    );
+  });
+
+  test('loads open due todo items through today', () async {
+    final list = await repository.saveTodoList(TodoList(title: '周末'));
+    final now = DateTime(2026, 5, 16, 12);
+    await repository.saveTodoItem(
+      TodoItem(listId: list.id, title: '逾期待办', dueAt: DateTime(2026, 5, 15)),
+    );
+    await repository.saveTodoItem(
+      TodoItem(
+        listId: list.id,
+        title: '今日待办',
+        dueAt: DateTime(2026, 5, 16, 20),
+      ),
+    );
+    await repository.saveTodoItem(
+      TodoItem(listId: list.id, title: '未来待办', dueAt: DateTime(2026, 5, 17)),
+    );
+
+    final due = await repository.loadDueTodoItems(now: now);
+
+    expect(due.map((item) => item.title), ['逾期待办', '今日待办']);
+  });
+
+  test('does not load due todo items from archived lists', () async {
+    final list = await repository.saveTodoList(TodoList(title: '周末'));
+    await repository.saveTodoItem(
+      TodoItem(listId: list.id, title: '不会展示', dueAt: DateTime(2026, 5, 16)),
+    );
+    await repository.archiveTodoList(list.id);
+
+    final due = await repository.loadDueTodoItems(
+      now: DateTime(2026, 5, 16, 12),
+    );
+
+    expect(due, isEmpty);
+  });
 }
