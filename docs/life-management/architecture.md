@@ -24,6 +24,8 @@
 | `Goal` | 有结果导向的目标 | “三个月减重 5kg”、“今年读 24 本书” |
 | `Milestone` | 目标阶段检查点 | “5 月底完成 8 本书” |
 | `Task/Plan` | 独立任务/待办型计划，可关联目标或习惯 | “今晚读 30 分钟” |
+| `TodoList` | 一组轻量待办的主题容器 | “周末要做的 10 件事” |
+| `TodoItem` | 主题下的单条可完成待办 | “整理书桌” |
 | `Habit` | 重复性行为定义 | “每天喝水 8 杯”、“每周跑步 3 次” |
 | `HabitCheckIn` | 一次习惯打卡事件 | 完成、跳过、数值、心情、备注 |
 | `LifeRecord` | 非固定周期的事实记录 | 加油、理发、汽车保养、缴费 |
@@ -59,6 +61,8 @@ class LifeItem {
 - **计划 `Task/Plan`**：回答“我接下来具体做什么”，是任务/待办对象。
 - **记录 `LifeRecord`**：回答“我实际发生了什么”，是事实事件对象。
 
+轻量待办先用 `TodoList -> TodoItem[]` 表达：`TodoList` 是主题，`TodoItem` 是可勾选的行动项。它不承载复杂项目依赖，也不要求绑定目标；目标接入后再通过 id 建立关联。
+
 推荐关系：
 
 ```text
@@ -71,7 +75,40 @@ Goal
 
 只有 `Milestone` 适合作为目标的内部阶段节点。`Habit`、`Task/Plan`、`LifeRecord` 应作为独立实体保存，通过 id 与目标建立关联。一个习惯可以服务多个目标，也可以不属于任何目标。
 
-### 3. 目标管理
+### 3. 轻量待办主题
+
+轻量待办是 `Task/Plan` 的首版实现，优先覆盖简单清单场景，而不是复杂项目管理。
+
+核心关系：
+
+```text
+TodoList
+  -> owns TodoItem[]
+```
+
+核心能力：
+
+- 创建一个待办主题，例如“周末要做的 10 件事”。
+- 在主题下添加多条待办项。
+- 待办项支持未完成、已完成、已归档状态。
+- 待办项支持可选截止日期，用于 Life 首页展示今日到期和已逾期待办。
+- 待办主题可以归档；归档后不再参与今日待办聚合。
+
+当前实现边界：
+
+- 不做任务依赖、优先级、重复任务、子任务和看板。
+- 不强制绑定目标；目标接入后通过 id 关联 `TodoList` 或 `TodoItem`。
+- 不触发本地通知；如后续需要提醒，应复用 `ReminderRule` 和 life-management reminder service。
+
+推荐状态：
+
+- `TodoListStatus.active`：正常展示。
+- `TodoListStatus.archived`：归档隐藏。
+- `TodoItemStatus.open`：未完成。
+- `TodoItemStatus.completed`：已完成。
+- `TodoItemStatus.archived`：归档隐藏。
+
+### 4. 目标管理
 
 核心能力：
 
@@ -99,7 +136,7 @@ Goal
 
 目标进度应从目标自身字段、关联任务、关联习惯和关联记录中聚合，避免要求习惯或计划必须挂载在目标内部。
 
-### 4. 习惯养成
+### 5. 习惯养成
 
 核心能力：
 
@@ -118,7 +155,7 @@ Goal
 
 习惯统计应从不可变的打卡事件计算得出。连续天数、完成率等可以缓存，但不应成为唯一事实来源。
 
-### 5. 日常记录
+### 6. 日常记录
 
 日常记录是事件型日志，可自由输入，也可套用结构化模板。
 
@@ -142,7 +179,7 @@ Goal
 - 根据记录生成后续提醒，例如“理发 30 天后提醒”或“保养后 5000 公里提醒”
 - 按模板、标签、日期范围、金额、车辆/人物等条件搜索过滤
 
-### 6. 快速捕获体验
+### 7. 快速捕获体验
 
 捕获层应支持多种输入：
 
@@ -161,11 +198,12 @@ Goal
 
 对于低风险操作，例如“今天喝水打卡完成”，在意图明确时可以允许 Agent 直接保存。对于删除、批量修改、敏感记录创建，应要求用户确认。
 
-### 7. 页面结构
+### 8. 页面结构
 
 首版建议页面：
 
-- **今日**：今日应完成习惯、逾期任务、今日提醒、快速记录入口。
+- **今日**：今日待办、今日应完成习惯、最近记录、今日提醒、快速创建入口。
+- **待办**：待办主题列表、主题详情、待办新增/编辑/完成。
 - **目标**：目标列表、里程碑、进度、复盘入口。
 - **习惯**：习惯列表、日历热力图、连续天数、完成率。
 - **记录**：按时间线展示日常记录，提供筛选和搜索。
@@ -189,6 +227,8 @@ lib/features/life_management/
   domain/
     life_item.dart
     goal.dart
+    todo_list.dart
+    todo_item.dart
     habit.dart
     habit_check_in.dart
     life_record.dart
@@ -203,6 +243,9 @@ lib/features/life_management/
     life_capture_parser.dart
   presentation/
     life_home_screen.dart
+    life_todos_screen.dart
+    life_todo_list_detail_screen.dart
+    life_todo_list_editor_screen.dart
     goals_screen.dart
     habits_screen.dart
     records_screen.dart
@@ -227,14 +270,16 @@ lib/features/life_management/
   habit_checkins.jsonl
   records.jsonl
   templates.json
+  todo_lists.json
+  todo_items.jsonl
   reviews.jsonl
   attachments/
 ```
 
 存储策略：
 
-- `goals.json`、`habits.json`、`templates.json` 存储规模较小、需要整体更新的对象集合。
-- `habit_checkins.jsonl`、`records.jsonl`、`reviews.jsonl` 存储追加型事件。
+- `goals.json`、`habits.json`、`templates.json`、`todo_lists.json` 存储规模较小、需要整体更新的对象集合。
+- `habit_checkins.jsonl`、`records.jsonl`、`todo_items.jsonl`、`reviews.jsonl` 存储追加或可重写的事件/条目集合。
 - 附件存储为文件，记录中只保存文件路径、MIME 类型、大小和摘要。
 - 每类文件增加 `schemaVersion`，为迁移预留空间。
 - 医疗、财务、位置等敏感字段避免写入日志；如后续加密，应放在 repository/store 层以下，避免影响 UI 和应用服务。

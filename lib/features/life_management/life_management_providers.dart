@@ -36,6 +36,29 @@ final lifeRecordsProvider = FutureProvider<List<LifeRecord>>((ref) async {
   return repository.loadRecords();
 });
 
+final lifeTodoListsProvider = FutureProvider<List<TodoList>>((ref) async {
+  final repository = await ref.watch(lifeManagementRepositoryProvider.future);
+  return repository.loadTodoLists();
+});
+
+final lifeDueTodoItemsProvider = FutureProvider<List<TodoItem>>((ref) async {
+  final repository = await ref.watch(lifeManagementRepositoryProvider.future);
+  return repository.loadDueTodoItems();
+});
+
+final lifeTodoItemsAllProvider = FutureProvider<List<TodoItem>>((ref) async {
+  final repository = await ref.watch(lifeManagementRepositoryProvider.future);
+  return repository.loadTodoItems();
+});
+
+final lifeTodoItemsProvider = FutureProvider.family<List<TodoItem>, String>((
+  ref,
+  listId,
+) async {
+  final repository = await ref.watch(lifeManagementRepositoryProvider.future);
+  return repository.loadTodoItems(listId: listId);
+});
+
 final lifeRecordTemplatesProvider = FutureProvider<List<RecordTemplate>>((
   ref,
 ) async {

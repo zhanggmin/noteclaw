@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutterclaw/services/blinko_api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,6 +31,17 @@ class _BlinkoNoteDetailScreenState extends State<BlinkoNoteDetailScreen> {
   String? _error;
 
   bool get _isCreate => widget.noteId == null;
+
+  Future<void> _copyContent() async {
+    final content = _contentCtl.text.trim();
+    if (content.isEmpty) return;
+
+    await Clipboard.setData(ClipboardData(text: content));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('笔记内容已复制'), duration: Duration(seconds: 1)),
+    );
+  }
 
   @override
   void initState() {
@@ -159,6 +171,14 @@ class _BlinkoNoteDetailScreenState extends State<BlinkoNoteDetailScreen> {
               tooltip: '刷新',
               onPressed: _loading || _saving ? null : _loadDetail,
               icon: const Icon(Icons.refresh),
+            ),
+          if (!_isCreate)
+            IconButton(
+              tooltip: '复制内容',
+              onPressed: _saving || _contentCtl.text.trim().isEmpty
+                  ? null
+                  : _copyContent,
+              icon: const Icon(Icons.copy_outlined),
             ),
           if (!_isCreate)
             IconButton(

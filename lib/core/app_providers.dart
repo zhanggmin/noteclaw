@@ -100,6 +100,7 @@ import 'package:flutterclaw/tools/pdf_tool.dart';
 import 'package:flutterclaw/tools/live_voice_tool.dart';
 import 'package:flutterclaw/services/connectivity_service.dart';
 import 'package:flutterclaw/services/battery_service.dart';
+import 'package:flutterclaw/services/backup_service.dart';
 import 'package:flutterclaw/services/auth_profile_service.dart';
 import 'package:flutterclaw/services/secrets_resolver.dart';
 import 'package:flutterclaw/services/secure_key_store.dart';
@@ -887,6 +888,10 @@ final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
 
 final batteryServiceProvider = Provider<BatteryService>((ref) {
   return BatteryService();
+});
+
+final backupServiceProvider = Provider<BackupService>((ref) {
+  return BackupService(configManager: ref.read(configManagerProvider));
 });
 
 final authProfileServiceProvider = FutureProvider<AuthProfileService>((ref) async {
@@ -1783,7 +1788,9 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
       final (sessionKey, message) = event;
       if (sessionKey != _getSessionKey()) return;
       final liveOn = _liveVoiceChatActive();
-      if (_processing && !liveOn) return; // We are already managing state ourselves.
+      if (_processing && !liveOn) {
+        return; // We are already managing state ourselves.
+      }
       if (message.role == 'system') return;
 
       // Tool result written by SessionManager (e.g. Gemini Live) — close the pill.

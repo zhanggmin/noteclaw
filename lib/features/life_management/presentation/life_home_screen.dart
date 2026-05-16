@@ -8,6 +8,9 @@ import 'package:flutterclaw/features/life_management/presentation/life_record_ed
 import 'package:flutterclaw/features/life_management/presentation/life_record_template_editor_screen.dart';
 import 'package:flutterclaw/features/life_management/presentation/life_records_screen.dart';
 import 'package:flutterclaw/features/life_management/presentation/life_template_records_screen.dart';
+import 'package:flutterclaw/features/life_management/presentation/life_todo_list_detail_screen.dart';
+import 'package:flutterclaw/features/life_management/presentation/life_todo_list_editor_screen.dart';
+import 'package:flutterclaw/features/life_management/presentation/life_todos_screen.dart';
 
 class LifeHomeScreen extends ConsumerWidget {
   const LifeHomeScreen({super.key});
@@ -18,6 +21,8 @@ class LifeHomeScreen extends ConsumerWidget {
     final habitsAsync = ref.watch(lifeHabitsProvider);
     final recordsAsync = ref.watch(lifeRecordsProvider);
     final templatesAsync = ref.watch(lifeRecordTemplatesProvider);
+    final dueTodosAsync = ref.watch(lifeDueTodoItemsProvider);
+    final todoListsAsync = ref.watch(lifeTodoListsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Life')),
@@ -39,6 +44,24 @@ class LifeHomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           _QuickActions(templatesAsync: templatesAsync),
+          const SizedBox(height: 16),
+          dueTodosAsync.when(
+            data: (items) => todoListsAsync.when(
+              data: (lists) => _DueTodosSection(items: items, lists: lists),
+              loading: () => const _LoadingSection(title: '今日待办'),
+              error: (error, _) => _InlineError(
+                title: '今日待办',
+                message: '$error',
+                onRetry: () => ref.invalidate(lifeTodoListsProvider),
+              ),
+            ),
+            loading: () => const _LoadingSection(title: '今日待办'),
+            error: (error, _) => _InlineError(
+              title: '今日待办',
+              message: '$error',
+              onRetry: () => ref.invalidate(lifeDueTodoItemsProvider),
+            ),
+          ),
           const SizedBox(height: 16),
           habitsAsync.when(
             data: (habits) => _TodayHabitsSection(habits: habits),
@@ -92,6 +115,17 @@ class LifeHomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _LifeSectionTile(
+            icon: Icons.checklist_outlined,
+            title: '待办',
+            subtitle: '按主题管理一次性任务和截止时间',
+            color: theme.colorScheme.primaryContainer,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LifeTodosScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _LifeSectionTile(
             icon: Icons.flag_outlined,
             title: '目标',
             subtitle: '后续阶段接入目标、计划和复盘',
@@ -104,6 +138,84 @@ class LifeHomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DueTodosSection extends StatelessWidget {
+  const _DueTodosSection({required this.items, required this.lists});
+
+  final List<TodoItem> items;
+  final List<TodoList> lists;
+
+  @override
+  Widget build(BuildContext context) {
+    final byId = {for (final list in lists) list.id: list};
+    return _Section(
+      title: '今日待办',
+      actionLabel: '全部',
+      onAction: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LifeTodosScreen()),
+      ),
+      child: items.isEmpty
+          ? const _SectionEmpty(
+              icon: Icons.checklist_outlined,
+              text: '今天没有到期待办',
+            )
+          : Column(
+              children: [
+                for (final item in items.take(5))
+                  _DueTodoTile(item: item, list: byId[item.listId]),
+              ],
+            ),
+    );
+  }
+}
+
+class _DueTodoTile extends ConsumerWidget {
+  const _DueTodoTile({required this.item, required this.list});
+
+  final TodoItem item;
+  final TodoList? list;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overdue =
+        item.dueAt != null &&
+        _dayOnly(item.dueAt!).isBefore(_dayOnly(DateTime.now()));
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        overdue ? Icons.warning_amber_outlined : Icons.radio_button_unchecked,
+      ),
+      title: Text(item.title),
+      subtitle: Text('${list?.title ?? '待办'} · ${overdue ? '已逾期' : '今天截止'}'),
+      trailing: IconButton.filledTonal(
+        tooltip: '完成',
+        onPressed: () async {
+          final repository = await ref.read(
+            lifeManagementRepositoryProvider.future,
+          );
+          await repository.completeTodoItem(item.id);
+          ref.invalidate(lifeDueTodoItemsProvider);
+          ref.invalidate(lifeTodoItemsAllProvider);
+          ref.invalidate(lifeTodoItemsProvider(item.listId));
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('${item.title} 已完成')));
+        },
+        icon: const Icon(Icons.check),
+      ),
+      onTap: list == null
+          ? null
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LifeTodoListDetailScreen(list: list!),
+              ),
+            ),
     );
   }
 }
@@ -137,6 +249,25 @@ class _QuickActions extends StatelessWidget {
           ),
           icon: const Icon(Icons.article_outlined),
           label: const Text('新建模板'),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: () async {
+            final created = await Navigator.push<TodoList>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LifeTodoListEditorScreen(),
+              ),
+            );
+            if (created == null || !context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LifeTodoListDetailScreen(list: created),
+              ),
+            );
+          },
+          icon: const Icon(Icons.checklist_outlined),
+          label: const Text('新建待办'),
         ),
         for (final template in templates.take(2))
           FilledButton.tonalIcon(

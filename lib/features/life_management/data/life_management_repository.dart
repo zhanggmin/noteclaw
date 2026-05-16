@@ -35,6 +35,8 @@ class LifeManagementRepository {
   File get _checkInsFile => File('${root.path}/habit_checkins.jsonl');
   File get _recordsFile => File('${root.path}/records.jsonl');
   File get _templatesFile => File('${root.path}/templates.json');
+  File get _todoListsFile => File('${root.path}/todo_lists.json');
+  File get _todoItemsFile => File('${root.path}/todo_items.jsonl');
 
   Future<void> initialize() async {
     await root.create(recursive: true);
@@ -119,6 +121,133 @@ class LifeManagementRepository {
   Future<List<RecordTemplate>> loadTemplates() async {
     final items = await _readJsonList(_templatesFile);
     return items.map(RecordTemplate.fromJson).toList();
+  }
+
+  Future<List<TodoList>> loadTodoLists({bool includeArchived = false}) async {
+    final items = await _readJsonList(_todoListsFile);
+    final lists = items.map(TodoList.fromJson).toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    if (includeArchived) return lists;
+    return lists.where((list) => list.status == TodoListStatus.active).toList();
+  }
+
+  Future<TodoList> saveTodoList(TodoList list) async {
+    final lists = await loadTodoLists(includeArchived: true);
+    final index = lists.indexWhere((item) => item.id == list.id);
+    final stored = list.copyWith(updatedAt: DateTime.now());
+    if (index == -1) {
+      lists.add(stored);
+    } else {
+      lists[index] = stored;
+    }
+    await _writeJsonList(_todoListsFile, lists.map((item) => item.toJson()));
+    return stored;
+  }
+
+  Future<void> archiveTodoList(String id) async {
+    final lists = await loadTodoLists(includeArchived: true);
+    final index = lists.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+    lists[index] = lists[index].copyWith(
+      status: TodoListStatus.archived,
+      archivedAt: DateTime.now(),
+    );
+    await _writeJsonList(_todoListsFile, lists.map((item) => item.toJson()));
+  }
+
+  Future<List<TodoItem>> loadTodoItems({
+    String? listId,
+    bool includeArchived = false,
+  }) async {
+    final items =
+        (await _readJsonLines(_todoItemsFile)).map(TodoItem.fromJson).where((
+          item,
+        ) {
+          if (listId != null && item.listId != listId) return false;
+          if (!includeArchived && item.status == TodoItemStatus.archived) {
+            return false;
+          }
+          return true;
+        }).toList()..sort((a, b) {
+          final statusCompare = _todoStatusRank(
+            a.status,
+          ).compareTo(_todoStatusRank(b.status));
+          if (statusCompare != 0) return statusCompare;
+          final aDue = a.dueAt;
+          final bDue = b.dueAt;
+          if (aDue != null && bDue != null) return aDue.compareTo(bDue);
+          if (aDue != null) return -1;
+          if (bDue != null) return 1;
+          return b.createdAt.compareTo(a.createdAt);
+        });
+    return items;
+  }
+
+  Future<List<TodoItem>> loadDueTodoItems({DateTime? now}) async {
+    final today = now ?? DateTime.now();
+    final activeListIds = (await loadTodoLists())
+        .map((list) => list.id)
+        .toSet();
+    final endOfToday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+      23,
+      59,
+      59,
+      999,
+    );
+    final items = await loadTodoItems();
+    return items
+        .where(
+          (item) =>
+              item.status == TodoItemStatus.open &&
+              activeListIds.contains(item.listId) &&
+              item.dueAt != null &&
+              !item.dueAt!.isAfter(endOfToday),
+        )
+        .toList()
+      ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
+  }
+
+  Future<TodoItem> saveTodoItem(TodoItem item) async {
+    final items = await loadTodoItems(includeArchived: true);
+    final index = items.indexWhere((existing) => existing.id == item.id);
+    final stored = item.copyWith(updatedAt: DateTime.now());
+    if (index == -1) {
+      items.add(stored);
+    } else {
+      items[index] = stored;
+    }
+    await _writeJsonLines(_todoItemsFile, items.map((item) => item.toJson()));
+    return stored;
+  }
+
+  Future<TodoItem?> completeTodoItem(String id, {bool completed = true}) async {
+    final items = await loadTodoItems(includeArchived: true);
+    final index = items.indexWhere((item) => item.id == id);
+    if (index == -1) return null;
+    final current = items[index];
+    final stored = current.copyWith(
+      status: completed ? TodoItemStatus.completed : TodoItemStatus.open,
+      completedAt: completed ? DateTime.now() : null,
+      clearCompletedAt: !completed,
+      updatedAt: DateTime.now(),
+    );
+    items[index] = stored;
+    await _writeJsonLines(_todoItemsFile, items.map((item) => item.toJson()));
+    return stored;
+  }
+
+  Future<void> archiveTodoItem(String id) async {
+    final items = await loadTodoItems(includeArchived: true);
+    final index = items.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+    items[index] = items[index].copyWith(
+      status: TodoItemStatus.archived,
+      updatedAt: DateTime.now(),
+    );
+    await _writeJsonLines(_todoItemsFile, items.map((item) => item.toJson()));
   }
 
   Future<void> saveTemplates(List<RecordTemplate> templates) async {
@@ -355,4 +484,12 @@ List<RecordTemplate> defaultRecordTemplates() {
       ],
     ),
   ];
+}
+
+int _todoStatusRank(TodoItemStatus status) {
+  return switch (status) {
+    TodoItemStatus.open => 0,
+    TodoItemStatus.completed => 1,
+    TodoItemStatus.archived => 2,
+  };
 }

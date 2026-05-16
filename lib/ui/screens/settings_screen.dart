@@ -5,6 +5,7 @@ import 'package:flutterclaw/core/package_info_provider.dart';
 import 'package:flutterclaw/l10n/l10n_extension.dart';
 import 'package:flutterclaw/ui/screens/channels_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/about_screen.dart';
+import 'package:flutterclaw/ui/screens/settings/backup_restore_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/gateway_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/mcp_servers_screen.dart';
 import 'package:flutterclaw/ui/screens/settings/providers_models_screen.dart';
@@ -103,6 +104,15 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.archive_outlined,
+            title: 'Backup & Restore',
+            subtitle: 'Export or restore app data',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BackupRestoreScreen()),
             ),
           ),
           _SettingsTile(

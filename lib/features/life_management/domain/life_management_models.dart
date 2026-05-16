@@ -10,6 +10,10 @@ enum HabitCheckInStatus { completed, partial, skipped, missed }
 
 enum LifeRecordStatus { active, archived, deleted }
 
+enum TodoListStatus { active, archived }
+
+enum TodoItemStatus { open, completed, archived }
+
 enum RecordFieldType { text, number, money, date, odometer, quantity }
 
 enum ReminderKind { once, daily, weekly, monthly }
@@ -445,5 +449,153 @@ class LifeRecord {
     reminder: json['reminder'] == null
         ? null
         : ReminderRule.fromJson(_map(json['reminder'])),
+  );
+}
+
+class TodoList {
+  final String id;
+  final String title;
+  final String? note;
+  final List<String> tags;
+  final TodoListStatus status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? archivedAt;
+
+  TodoList({
+    String? id,
+    required this.title,
+    this.note,
+    this.tags = const [],
+    this.status = TodoListStatus.active,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    this.archivedAt,
+  }) : id = id ?? _newId(),
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  TodoList copyWith({
+    String? title,
+    String? note,
+    List<String>? tags,
+    TodoListStatus? status,
+    DateTime? updatedAt,
+    DateTime? archivedAt,
+  }) {
+    return TodoList(
+      id: id,
+      title: title ?? this.title,
+      note: note ?? this.note,
+      tags: tags ?? this.tags,
+      status: status ?? this.status,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+      archivedAt: archivedAt ?? this.archivedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    if (note != null) 'note': note,
+    if (tags.isNotEmpty) 'tags': tags,
+    'status': status.name,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+    if (archivedAt != null) 'archived_at': archivedAt!.toIso8601String(),
+  };
+
+  factory TodoList.fromJson(Map<String, dynamic> json) => TodoList(
+    id: json['id'] as String?,
+    title: json['title'] as String? ?? '',
+    note: json['note'] as String?,
+    tags: _stringList(json['tags']),
+    status: _enumByName(
+      TodoListStatus.values,
+      json['status'],
+      TodoListStatus.active,
+    ),
+    createdAt: _dateFromJson(json['created_at']),
+    updatedAt: _dateFromJson(json['updated_at']),
+    archivedAt: _nullableDateFromJson(json['archived_at']),
+  );
+}
+
+class TodoItem {
+  final String id;
+  final String listId;
+  final String title;
+  final String? note;
+  final TodoItemStatus status;
+  final DateTime? dueAt;
+  final DateTime? completedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  TodoItem({
+    String? id,
+    required this.listId,
+    required this.title,
+    this.note,
+    this.status = TodoItemStatus.open,
+    this.dueAt,
+    this.completedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) : id = id ?? _newId(),
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  TodoItem copyWith({
+    String? listId,
+    String? title,
+    String? note,
+    TodoItemStatus? status,
+    DateTime? dueAt,
+    DateTime? completedAt,
+    DateTime? updatedAt,
+    bool clearDueAt = false,
+    bool clearCompletedAt = false,
+  }) {
+    return TodoItem(
+      id: id,
+      listId: listId ?? this.listId,
+      title: title ?? this.title,
+      note: note ?? this.note,
+      status: status ?? this.status,
+      dueAt: clearDueAt ? null : dueAt ?? this.dueAt,
+      completedAt: clearCompletedAt ? null : completedAt ?? this.completedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'list_id': listId,
+    'title': title,
+    if (note != null) 'note': note,
+    'status': status.name,
+    if (dueAt != null) 'due_at': dueAt!.toIso8601String(),
+    if (completedAt != null) 'completed_at': completedAt!.toIso8601String(),
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
+
+  factory TodoItem.fromJson(Map<String, dynamic> json) => TodoItem(
+    id: json['id'] as String?,
+    listId: json['list_id'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    note: json['note'] as String?,
+    status: _enumByName(
+      TodoItemStatus.values,
+      json['status'],
+      TodoItemStatus.open,
+    ),
+    dueAt: _nullableDateFromJson(json['due_at']),
+    completedAt: _nullableDateFromJson(json['completed_at']),
+    createdAt: _dateFromJson(json['created_at']),
+    updatedAt: _dateFromJson(json['updated_at']),
   );
 }

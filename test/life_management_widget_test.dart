@@ -6,6 +6,8 @@ import 'package:flutterclaw/features/life_management/life_management_providers.d
 import 'package:flutterclaw/features/life_management/presentation/life_habits_screen.dart';
 import 'package:flutterclaw/features/life_management/presentation/life_home_screen.dart';
 import 'package:flutterclaw/features/life_management/presentation/life_records_screen.dart';
+import 'package:flutterclaw/features/life_management/presentation/life_todo_list_detail_screen.dart';
+import 'package:flutterclaw/features/life_management/presentation/life_todos_screen.dart';
 
 void main() {
   testWidgets('life home renders today habits and recent records', (
@@ -25,6 +27,13 @@ void main() {
       title: '今天加油',
       occurredAt: DateTime(2026, 5, 14),
     );
+    final todoList = TodoList(id: 'todo-list-1', title: '周末要做的10件事');
+    final todo = TodoItem(
+      id: 'todo-1',
+      listId: 'todo-list-1',
+      title: '整理书桌',
+      dueAt: DateTime.now(),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -32,6 +41,9 @@ void main() {
           lifeHabitsProvider.overrideWith((ref) async => [habit]),
           lifeRecordsProvider.overrideWith((ref) async => [record]),
           lifeRecordTemplatesProvider.overrideWith((ref) async => [template]),
+          lifeDueTodoItemsProvider.overrideWith((ref) async => [todo]),
+          lifeTodoListsProvider.overrideWith((ref) async => [todoList]),
+          lifeTodoItemsAllProvider.overrideWith((ref) async => [todo]),
           lifeHabitCheckInsProvider.overrideWith((ref, habitId) async => []),
         ],
         child: const MaterialApp(home: LifeHomeScreen()),
@@ -41,6 +53,8 @@ void main() {
 
     expect(find.text('今日习惯'), findsOneWidget);
     expect(find.text('晨跑'), findsOneWidget);
+    expect(find.text('今日待办'), findsOneWidget);
+    expect(find.text('整理书桌'), findsOneWidget);
     expect(find.text('最近记录'), findsOneWidget);
     expect(find.text('今天加油'), findsOneWidget);
   });
@@ -94,5 +108,69 @@ void main() {
 
     expect(find.text('还没有模板'), findsOneWidget);
     expect(find.text('新建模板'), findsOneWidget);
+  });
+
+  testWidgets('todos screen renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          lifeTodoListsProvider.overrideWith((ref) async => []),
+          lifeTodoItemsAllProvider.overrideWith((ref) async => []),
+        ],
+        child: const MaterialApp(home: LifeTodosScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('还没有待办主题'), findsOneWidget);
+    expect(find.text('新建主题'), findsOneWidget);
+  });
+
+  testWidgets('todos screen renders list summary', (tester) async {
+    final list = TodoList(id: 'todo-list-1', title: '周末要做的10件事');
+    final items = [
+      TodoItem(id: 'todo-1', listId: list.id, title: '整理书桌'),
+      TodoItem(
+        id: 'todo-2',
+        listId: list.id,
+        title: '洗衣服',
+        status: TodoItemStatus.completed,
+        completedAt: DateTime(2026, 5, 16),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          lifeTodoListsProvider.overrideWith((ref) async => [list]),
+          lifeTodoItemsAllProvider.overrideWith((ref) async => items),
+        ],
+        child: const MaterialApp(home: LifeTodosScreen()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('周末要做的10件事'), findsOneWidget);
+    expect(find.text('未完成 1 · 已完成 1 · 总计 2'), findsOneWidget);
+  });
+
+  testWidgets('todo detail opens bulk add sheet', (tester) async {
+    final list = TodoList(id: 'todo-list-1', title: '周末要做的10件事');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          lifeTodoItemsProvider.overrideWith((ref, listId) async => []),
+        ],
+        child: MaterialApp(home: LifeTodoListDetailScreen(list: list)),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('批量新增'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('批量新增待办'), findsOneWidget);
+    expect(find.text('新增 0 条待办'), findsOneWidget);
   });
 }

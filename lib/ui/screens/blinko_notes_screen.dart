@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutterclaw/services/blinko_api_service.dart';
 import 'package:flutterclaw/services/secure_key_store.dart';
 import 'package:flutterclaw/ui/screens/blinko_note_detail_screen.dart';
@@ -282,19 +283,36 @@ class _BlinkoNotesScreenState extends State<BlinkoNotesScreen> {
             return _NoteCard(
               note: _notes[index],
               onTap: () => _openNote(_notes[index]),
+              onCopy: () => _copyNoteContent(_notes[index].content),
             );
           },
         ),
       ),
     );
   }
+
+  Future<void> _copyNoteContent(String content) async {
+    final text = content.trim();
+    if (text.isEmpty) return;
+
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('笔记内容已复制'), duration: Duration(seconds: 1)),
+    );
+  }
 }
 
 class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.note, required this.onTap});
+  const _NoteCard({
+    required this.note,
+    required this.onTap,
+    required this.onCopy,
+  });
 
   final BlinkoNote note;
   final VoidCallback onTap;
+  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -330,6 +348,20 @@ class _NoteCard extends StatelessWidget {
                       padding: EdgeInsets.only(left: 8),
                       child: Icon(Icons.push_pin, size: 18),
                     ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: IconButton(
+                      tooltip: '复制内容',
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 36,
+                        height: 36,
+                      ),
+                      padding: EdgeInsets.zero,
+                      onPressed: note.content.trim().isEmpty ? null : onCopy,
+                      icon: const Icon(Icons.copy_outlined, size: 20),
+                    ),
+                  ),
                 ],
               ),
               if (body.isNotEmpty) ...[
