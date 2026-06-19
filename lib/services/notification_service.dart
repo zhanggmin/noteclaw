@@ -358,6 +358,17 @@ class NotificationService {
     if (!_initialized) {
       throw StateError('NotificationService not initialized.');
     }
+    if (Platform.isAndroid) {
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidPlugin?.requestNotificationsPermission();
+      final exactGranted = await androidPlugin?.requestExactAlarmsPermission();
+      if (exactGranted == false) {
+        _log.warning('Android exact alarm permission not granted');
+      }
+    }
   }
 
   NotificationDetails get _reminderNotificationDetails =>

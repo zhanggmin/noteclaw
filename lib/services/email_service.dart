@@ -19,6 +19,17 @@ import 'secure_key_store.dart';
 
 final _log = Logger('flutterclaw.email');
 
+int _intOrDefault(Object? value, int defaultValue) {
+  if (value == null) return defaultValue;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed != null) return parsed;
+  }
+  return defaultValue;
+}
+
 // ---------------------------------------------------------------------------
 // Email Account model
 // ---------------------------------------------------------------------------
@@ -52,28 +63,28 @@ class EmailAccount {
   });
 
   factory EmailAccount.fromJson(Map<String, dynamic> json) => EmailAccount(
-        id: json['id'] as String,
-        label: json['label'] as String? ?? '',
-        email: json['email'] as String,
-        smtpHost: json['smtp_host'] as String,
-        smtpPort: json['smtp_port'] as int? ?? 587,
-        smtpSsl: json['smtp_ssl'] as bool? ?? true,
-        imapHost: json['imap_host'] as String,
-        imapPort: json['imap_port'] as int? ?? 993,
-        imapSsl: json['imap_ssl'] as bool? ?? true,
-      );
+    id: json['id'] as String,
+    label: json['label'] as String? ?? '',
+    email: json['email'] as String,
+    smtpHost: json['smtp_host'] as String,
+    smtpPort: _intOrDefault(json['smtp_port'], 587),
+    smtpSsl: json['smtp_ssl'] as bool? ?? true,
+    imapHost: json['imap_host'] as String,
+    imapPort: _intOrDefault(json['imap_port'], 993),
+    imapSsl: json['imap_ssl'] as bool? ?? true,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'email': email,
-        'smtp_host': smtpHost,
-        'smtp_port': smtpPort,
-        'smtp_ssl': smtpSsl,
-        'imap_host': imapHost,
-        'imap_port': imapPort,
-        'imap_ssl': imapSsl,
-      };
+    'id': id,
+    'label': label,
+    'email': email,
+    'smtp_host': smtpHost,
+    'smtp_port': smtpPort,
+    'smtp_ssl': smtpSsl,
+    'imap_host': imapHost,
+    'imap_port': imapPort,
+    'imap_ssl': imapSsl,
+  };
 
   /// Secure storage key for this account's password.
   String get _secretKey => 'email_$id';
@@ -270,8 +281,9 @@ class EmailService {
       }
 
       // Take the last `limit` (most recent).
-      final toFetch =
-          uids.length > limit ? uids.sublist(uids.length - limit) : uids;
+      final toFetch = uids.length > limit
+          ? uids.sublist(uids.length - limit)
+          : uids;
       final seqSet = toFetch.join(',');
 
       final fetchResp = await client.fetch(
@@ -291,9 +303,7 @@ class EmailService {
   }
 
   /// List IMAP mailbox folders.
-  Future<List<String>> listFolders({
-    required EmailAccount account,
-  }) async {
+  Future<List<String>> listFolders({required EmailAccount account}) async {
     final password = await account.getPassword();
     if (password == null || password.isEmpty) {
       throw Exception(
@@ -310,8 +320,9 @@ class EmailService {
       for (final line in resp.split('\r\n')) {
         if (!line.startsWith('* LIST')) continue;
         // Format: * LIST (\Flags) "delimiter" "name"
-        final match = RegExp(r'\* LIST \([^)]*\) "[^"]*" "?([^"\r]+)"?')
-            .firstMatch(line);
+        final match = RegExp(
+          r'\* LIST \([^)]*\) "[^"]*" "?([^"\r]+)"?',
+        ).firstMatch(line);
         if (match != null) folders.add(match.group(1)!.trim());
       }
       await client.logout();
@@ -334,9 +345,10 @@ class EmailService {
       final msg = <String, dynamic>{};
 
       // Extract ENVELOPE fields using quoted-string parsing.
-      final envMatch =
-          RegExp(r'ENVELOPE \((.+?)\)\s*(BODY|$)', dotAll: true)
-              .firstMatch(block);
+      final envMatch = RegExp(
+        r'ENVELOPE \((.+?)\)\s*(BODY|$)',
+        dotAll: true,
+      ).firstMatch(block);
       if (envMatch != null) {
         final env = envMatch.group(1)!;
         // The ENVELOPE format is:
@@ -352,9 +364,10 @@ class EmailService {
       }
 
       // Extract body text preview.
-      final bodyMatch =
-          RegExp(r'BODY\[TEXT\]<0> \{(\d+)\}\r?\n([\s\S]*)', dotAll: true)
-              .firstMatch(block);
+      final bodyMatch = RegExp(
+        r'BODY\[TEXT\]<0> \{(\d+)\}\r?\n([\s\S]*)',
+        dotAll: true,
+      ).firstMatch(block);
       if (bodyMatch != null) {
         var preview = bodyMatch.group(2) ?? '';
         // Strip HTML tags for a clean preview.
@@ -455,36 +468,43 @@ class EmailService {
 
   /// Decode MIME encoded-word headers (=?charset?encoding?text?=).
   String _decodeMimeHeader(String s) {
-    return s.replaceAllMapped(
-      RegExp(r'=\?([^?]+)\?([BbQq])\?([^?]+)\?='),
-      (m) {
-        final encoding = m.group(2)!.toUpperCase();
-        final text = m.group(3)!;
-        try {
-          if (encoding == 'B') {
-            return utf8.decode(base64.decode(text), allowMalformed: true);
-          } else {
-            // Q encoding: underscores are spaces, =XX is hex byte.
-            final decoded = text.replaceAll('_', ' ').replaceAllMapped(
-                  RegExp(r'=([0-9A-Fa-f]{2})'),
-                  (hm) => String.fromCharCode(
-                    int.parse(hm.group(1)!, radix: 16),
-                  ),
-                );
-            return decoded;
-          }
-        } catch (_) {
-          return text;
+    return s.replaceAllMapped(RegExp(r'=\?([^?]+)\?([BbQq])\?([^?]+)\?='), (m) {
+      final encoding = m.group(2)!.toUpperCase();
+      final text = m.group(3)!;
+      try {
+        if (encoding == 'B') {
+          return utf8.decode(base64.decode(text), allowMalformed: true);
+        } else {
+          // Q encoding: underscores are spaces, =XX is hex byte.
+          final decoded = text
+              .replaceAll('_', ' ')
+              .replaceAllMapped(
+                RegExp(r'=([0-9A-Fa-f]{2})'),
+                (hm) => String.fromCharCode(int.parse(hm.group(1)!, radix: 16)),
+              );
+          return decoded;
         }
-      },
-    );
+      } catch (_) {
+        return text;
+      }
+    });
   }
 
   /// Format date for IMAP SINCE clause (DD-Mon-YYYY).
   String _imapDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day}-${months[d.month - 1]}-${d.year}';
   }

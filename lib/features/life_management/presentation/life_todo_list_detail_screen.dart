@@ -135,10 +135,10 @@ class _TodoItemTile extends ConsumerWidget {
               await _showItemSheet(context, listId: item.listId, item: item);
               return;
             }
-            final repository = await ref.read(
-              lifeManagementRepositoryProvider.future,
+            final service = await ref.read(
+              lifeManagementServiceProvider.future,
             );
-            await repository.archiveTodoItem(item.id);
+            await service.archiveTodoItem(item.id);
             if (!context.mounted) return;
             ref.invalidate(lifeTodoItemsProvider(item.listId));
             ref.invalidate(lifeTodoItemsAllProvider);
@@ -170,8 +170,8 @@ class _TodoItemTile extends ConsumerWidget {
     WidgetRef ref,
     bool completed,
   ) async {
-    final repository = await ref.read(lifeManagementRepositoryProvider.future);
-    await repository.completeTodoItem(item.id, completed: completed);
+    final service = await ref.read(lifeManagementServiceProvider.future);
+    await service.completeTodoItem(item.id, completed: completed);
     if (!context.mounted) return;
     ref.invalidate(lifeTodoItemsProvider(item.listId));
     ref.invalidate(lifeTodoItemsAllProvider);
@@ -287,11 +287,9 @@ class _BulkTodoItemSheetState extends ConsumerState<_BulkTodoItemSheet> {
     if (titles.isEmpty) return;
     setState(() => _saving = true);
     try {
-      final repository = await ref.read(
-        lifeManagementRepositoryProvider.future,
-      );
+      final service = await ref.read(lifeManagementServiceProvider.future);
       for (final title in titles) {
-        await repository.saveTodoItem(
+        await service.saveTodoItem(
           TodoItem(listId: widget.listId, title: title),
         );
       }
@@ -389,7 +387,9 @@ class _TodoItemSheetState extends ConsumerState<_TodoItemSheet> {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.event_outlined),
                 title: const Text('截止时间'),
-                subtitle: Text(_dueAt == null ? '不设置' : _formatDate(_dueAt!)),
+                subtitle: Text(
+                  _dueAt == null ? '不设置' : _formatDateTime(_dueAt!),
+                ),
                 trailing: Wrap(
                   children: [
                     if (_dueAt != null)
@@ -401,8 +401,8 @@ class _TodoItemSheetState extends ConsumerState<_TodoItemSheet> {
                         icon: const Icon(Icons.clear),
                       ),
                     IconButton(
-                      tooltip: '选择日期',
-                      onPressed: _saving ? null : _pickDueDate,
+                      tooltip: '选择时间',
+                      onPressed: _saving ? null : _pickDueDateTime,
                       icon: const Icon(Icons.calendar_month_outlined),
                     ),
                   ],
@@ -430,26 +430,39 @@ class _TodoItemSheetState extends ConsumerState<_TodoItemSheet> {
     );
   }
 
-  Future<void> _pickDueDate() async {
+  Future<void> _pickDueDateTime() async {
+    final now = DateTime.now();
+    final initial = _dueAt ?? now.add(const Duration(hours: 1));
     final selected = await showDatePicker(
       context: context,
-      initialDate: _dueAt ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDate: initial,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 3650)),
     );
     if (!mounted || selected == null) return;
-    setState(() => _dueAt = selected);
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (!mounted || time == null) return;
+    setState(
+      () => _dueAt = DateTime(
+        selected.year,
+        selected.month,
+        selected.day,
+        time.hour,
+        time.minute,
+      ),
+    );
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      final repository = await ref.read(
-        lifeManagementRepositoryProvider.future,
-      );
+      final service = await ref.read(lifeManagementServiceProvider.future);
       final existing = widget.item;
-      await repository.saveTodoItem(
+      await service.saveTodoItem(
         TodoItem(
           id: existing?.id,
           listId: widget.listId,
@@ -475,6 +488,11 @@ class _TodoItemSheetState extends ConsumerState<_TodoItemSheet> {
 String _formatDate(DateTime value) {
   final local = value.toLocal();
   return '${local.year}-${_twoDigits(local.month)}-${_twoDigits(local.day)}';
+}
+
+String _formatDateTime(DateTime value) {
+  final local = value.toLocal();
+  return '${_formatDate(local)} ${_twoDigits(local.hour)}:${_twoDigits(local.minute)}';
 }
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');

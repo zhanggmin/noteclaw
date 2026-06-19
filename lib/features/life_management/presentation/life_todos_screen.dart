@@ -117,10 +117,10 @@ class _TodoListTile extends ConsumerWidget {
               );
               return;
             }
-            final repository = await ref.read(
-              lifeManagementRepositoryProvider.future,
+            final service = await ref.read(
+              lifeManagementServiceProvider.future,
             );
-            await repository.archiveTodoList(list.id);
+            await service.archiveTodoList(list.id);
             ref.invalidate(lifeTodoListsProvider);
             ref.invalidate(lifeTodoItemsAllProvider);
             if (!context.mounted) return;

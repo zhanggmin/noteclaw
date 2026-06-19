@@ -129,6 +129,39 @@ class LifeManagementService {
     return stored;
   }
 
+  Future<TodoItem> saveTodoItem(TodoItem item) async {
+    final stored = await _repository.saveTodoItem(item);
+    await syncTodoReminder(stored);
+    return stored;
+  }
+
+  Future<void> archiveTodoList(String id) async {
+    final items = await _repository.loadTodoItems(
+      listId: id,
+      includeArchived: true,
+    );
+    await _repository.archiveTodoList(id);
+    for (final item in items) {
+      await cancelTodoReminder(item.id);
+    }
+  }
+
+  Future<TodoItem?> completeTodoItem(String id, {bool completed = true}) async {
+    final stored = await _repository.completeTodoItem(id, completed: completed);
+    if (stored == null) return null;
+    if (completed) {
+      await cancelTodoReminder(id);
+    } else {
+      await syncTodoReminder(stored);
+    }
+    return stored;
+  }
+
+  Future<void> archiveTodoItem(String id) async {
+    await _repository.archiveTodoItem(id);
+    await cancelTodoReminder(id);
+  }
+
   Future<void> archiveRecord(String id) async {
     await _repository.archiveRecord(id);
     await cancelRecordReminder(id);
@@ -223,6 +256,29 @@ class LifeManagementService {
     }
   }
 
+  Future<void> syncTodoReminder(TodoItem item) async {
+    await cancelTodoReminder(item.id);
+    if (item.status != TodoItemStatus.open || item.dueAt == null) {
+      return;
+    }
+
+    try {
+      await _reminderScheduler.scheduleOneOffReminder(
+        id: _todoReminderId(item.id),
+        title: item.title,
+        body: '待办截止提醒',
+        scheduledAt: item.dueAt!,
+        payload: 'life:todo:${item.id}',
+      );
+    } catch (error, stackTrace) {
+      _log.warning(
+        'Failed syncing todo reminder ${item.id}',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
   Future<void> cancelHabitReminder(String habitId) async {
     await _reminderScheduler.cancelNotification(_habitReminderId(habitId));
     for (var weekday = DateTime.monday; weekday <= DateTime.sunday; weekday++) {
@@ -235,6 +291,10 @@ class LifeManagementService {
   Future<void> cancelRecordReminder(String recordId) async {
     await _reminderScheduler.cancelNotification(_recordReminderId(recordId));
   }
+
+  Future<void> cancelTodoReminder(String todoId) async {
+    await _reminderScheduler.cancelNotification(_todoReminderId(todoId));
+  }
 }
 
 int _habitReminderId(String habitId, {int? weekday}) {
@@ -243,6 +303,10 @@ int _habitReminderId(String habitId, {int? weekday}) {
 
 int _recordReminderId(String recordId) {
   return _stableNotificationId('life:record:$recordId');
+}
+
+int _todoReminderId(String todoId) {
+  return _stableNotificationId('life:todo:$todoId');
 }
 
 int _stableNotificationId(String key) {

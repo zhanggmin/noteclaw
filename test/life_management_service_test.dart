@@ -95,6 +95,55 @@ void main() {
     expect(scheduler.oneOffSchedules.single.title, '理发');
     expect(scheduler.oneOffSchedules.single.scheduledAt, scheduledAt);
   });
+
+  test('saving todo with due time schedules one-off reminder', () async {
+    final dueAt = DateTime(2026, 6, 13, 18, 30);
+
+    await service.saveTodoItem(
+      TodoItem(id: 'todo-1', listId: 'list-1', title: '买菜', dueAt: dueAt),
+    );
+
+    expect(scheduler.oneOffSchedules, hasLength(1));
+    expect(scheduler.oneOffSchedules.single.title, '买菜');
+    expect(scheduler.oneOffSchedules.single.scheduledAt, dueAt);
+  });
+
+  test('completing todo cancels reminder', () async {
+    final dueAt = DateTime(2026, 6, 13, 18, 30);
+    await service.saveTodoItem(
+      TodoItem(id: 'todo-1', listId: 'list-1', title: '买菜', dueAt: dueAt),
+    );
+    scheduler.clear();
+
+    await service.completeTodoItem('todo-1');
+
+    expect(scheduler.cancelledIds, hasLength(1));
+  });
+
+  test('archiving todo list cancels item reminders', () async {
+    await repository.saveTodoList(TodoList(id: 'list-1', title: '周末'));
+    await service.saveTodoItem(
+      TodoItem(
+        id: 'todo-1',
+        listId: 'list-1',
+        title: '买菜',
+        dueAt: DateTime(2026, 6, 13, 18, 30),
+      ),
+    );
+    await service.saveTodoItem(
+      TodoItem(
+        id: 'todo-2',
+        listId: 'list-1',
+        title: '洗衣服',
+        dueAt: DateTime(2026, 6, 14, 9),
+      ),
+    );
+    scheduler.clear();
+
+    await service.archiveTodoList('list-1');
+
+    expect(scheduler.cancelledIds, hasLength(2));
+  });
 }
 
 class _FakeReminderScheduler implements LifeReminderScheduler {

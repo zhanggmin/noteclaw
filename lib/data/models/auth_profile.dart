@@ -7,6 +7,17 @@ library;
 
 enum CooldownReason { rateLimited, overloaded, serverError }
 
+int _intOrDefault(Object? value, int defaultValue) {
+  if (value == null) return defaultValue;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed != null) return parsed;
+  }
+  return defaultValue;
+}
+
 class AuthProfile {
   final String id;
 
@@ -47,26 +58,28 @@ class AuthProfile {
   bool get isEligible => enabled && !isOnCooldown;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'provider': provider,
-        'displayName': displayName,
-        'enabled': enabled,
-        if (cooldownUntilMs > 0) 'cooldownUntilMs': cooldownUntilMs,
-        if (cooldownReason != null) 'cooldownReason': cooldownReason!.name,
-        if (errorCount > 0) 'errorCount': errorCount,
-        if (lastUsedMs > 0) 'lastUsedMs': lastUsedMs,
-      };
+    'id': id,
+    'provider': provider,
+    'displayName': displayName,
+    'enabled': enabled,
+    if (cooldownUntilMs > 0) 'cooldownUntilMs': cooldownUntilMs,
+    if (cooldownReason != null) 'cooldownReason': cooldownReason!.name,
+    if (errorCount > 0) 'errorCount': errorCount,
+    if (lastUsedMs > 0) 'lastUsedMs': lastUsedMs,
+  };
 
   factory AuthProfile.fromJson(Map<String, dynamic> json) => AuthProfile(
-        id: json['id'] as String,
-        provider: json['provider'] as String,
-        displayName: json['displayName'] as String? ?? json['id'] as String,
-        enabled: json['enabled'] as bool? ?? true,
-        cooldownUntilMs: json['cooldownUntilMs'] as int? ?? 0,
-        cooldownReason: json['cooldownReason'] != null
-            ? CooldownReason.values.where((r) => r.name == json['cooldownReason']).firstOrNull
-            : null,
-        errorCount: json['errorCount'] as int? ?? 0,
-        lastUsedMs: json['lastUsedMs'] as int? ?? 0,
-      );
+    id: json['id'] as String,
+    provider: json['provider'] as String,
+    displayName: json['displayName'] as String? ?? json['id'] as String,
+    enabled: json['enabled'] as bool? ?? true,
+    cooldownUntilMs: _intOrDefault(json['cooldownUntilMs'], 0),
+    cooldownReason: json['cooldownReason'] != null
+        ? CooldownReason.values
+              .where((r) => r.name == json['cooldownReason'])
+              .firstOrNull
+        : null,
+    errorCount: _intOrDefault(json['errorCount'], 0),
+    lastUsedMs: _intOrDefault(json['lastUsedMs'], 0),
+  );
 }

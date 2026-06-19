@@ -194,10 +194,8 @@ class _DueTodoTile extends ConsumerWidget {
       trailing: IconButton.filledTonal(
         tooltip: '完成',
         onPressed: () async {
-          final repository = await ref.read(
-            lifeManagementRepositoryProvider.future,
-          );
-          await repository.completeTodoItem(item.id);
+          final service = await ref.read(lifeManagementServiceProvider.future);
+          await service.completeTodoItem(item.id);
           ref.invalidate(lifeDueTodoItemsProvider);
           ref.invalidate(lifeTodoItemsAllProvider);
           ref.invalidate(lifeTodoItemsProvider(item.listId));

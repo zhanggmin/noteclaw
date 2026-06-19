@@ -44,10 +44,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// the session whose key is stored in the notification payload.
   void _subscribeToNotificationTaps() {
     final notifService = ref.read(notificationServiceProvider);
-    _notifTapSub = notifService.tapPayloadStream.listen((sessionKey) {
+    _notifTapSub = notifService.tapPayloadStream.listen((payload) {
       if (!mounted) return;
+      if (payload.startsWith('life:')) {
+        setState(() => _currentIndex = 2);
+        return;
+      }
       setState(() => _currentIndex = 0); // switch to Chat tab
-      ref.read(chatProvider.notifier).switchToSession(sessionKey);
+      ref.read(chatProvider.notifier).switchToSession(payload);
     });
   }
 

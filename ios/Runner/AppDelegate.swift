@@ -36,6 +36,87 @@ import UserNotifications
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     setupUiAutomationChannel(engineBridge)
     setupSandboxChannel(engineBridge)
+    setupICloudBackupChannel(engineBridge)
+  }
+
+  // MARK: - iCloud Backup
+
+  private func setupICloudBackupChannel(_ engineBridge: FlutterImplicitEngineBridge) {
+    guard let messenger = engineBridge.pluginRegistry
+      .registrar(forPlugin: "ICloudBackup")?.messenger() else { return }
+
+    let channel = FlutterMethodChannel(
+      name: "ai.flutterclaw/icloud_backup",
+      binaryMessenger: messenger
+    )
+
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "saveBackup":
+        guard let args = call.arguments as? [String: Any],
+              let sourcePath = args["sourcePath"] as? String,
+              let fileName = args["fileName"] as? String else {
+          result(FlutterError(
+            code: "BAD_ARGS",
+            message: "sourcePath and fileName are required.",
+            details: nil
+          ))
+          return
+        }
+        self.saveBackupToICloud(sourcePath: sourcePath, fileName: fileName, result: result)
+
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  private func saveBackupToICloud(
+    sourcePath: String,
+    fileName: String,
+    result: @escaping FlutterResult
+  ) {
+    DispatchQueue.global(qos: .userInitiated).async {
+      let fileManager = FileManager.default
+      guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: nil) else {
+        DispatchQueue.main.async {
+          result(FlutterError(
+            code: "ICLOUD_UNAVAILABLE",
+            message: "iCloud Drive is unavailable. Enable iCloud Drive and the app's iCloud permission.",
+            details: nil
+          ))
+        }
+        return
+      }
+
+      let backupsURL = containerURL
+        .appendingPathComponent("Documents", isDirectory: true)
+        .appendingPathComponent("Backups", isDirectory: true)
+      let destinationURL = backupsURL.appendingPathComponent(fileName)
+      let sourceURL = URL(fileURLWithPath: sourcePath)
+
+      do {
+        try fileManager.createDirectory(
+          at: backupsURL,
+          withIntermediateDirectories: true
+        )
+        if fileManager.fileExists(atPath: destinationURL.path) {
+          try fileManager.removeItem(at: destinationURL)
+        }
+        try fileManager.copyItem(at: sourceURL, to: destinationURL)
+        DispatchQueue.main.async {
+          result(destinationURL.path)
+        }
+      } catch {
+        DispatchQueue.main.async {
+          result(FlutterError(
+            code: "ICLOUD_SAVE_FAILED",
+            message: "Failed to save backup to iCloud Drive: \(error.localizedDescription)",
+            details: nil
+          ))
+        }
+      }
+    }
   }
 
   // MARK: - UI Automation (iOS: screenshot only; gestures not supported)

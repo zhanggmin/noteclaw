@@ -60,6 +60,16 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           ),
           if (_lastExport != null) ...[
             const SizedBox(height: 20),
+            if (Platform.isIOS) ...[
+              OutlinedButton.icon(
+                icon: const Icon(Icons.cloud_upload_outlined),
+                label: const Text('Save Last Export to iCloud'),
+                onPressed: _busy
+                    ? null
+                    : () => _saveBackupToICloud(_lastExport!),
+              ),
+              const SizedBox(height: 8),
+            ],
             OutlinedButton.icon(
               icon: const Icon(Icons.ios_share_outlined),
               label: const Text('Share Last Export'),
@@ -121,6 +131,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               title: const Text('Save to file'),
               onTap: () => Navigator.pop(context, _ExportAction.save),
             ),
+            if (Platform.isIOS)
+              ListTile(
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: const Text('Save to iCloud Drive'),
+                onTap: () => Navigator.pop(context, _ExportAction.iCloud),
+              ),
           ],
         ),
       ),
@@ -130,6 +146,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       await _shareBackup(result);
     } else if (action == _ExportAction.save) {
       await _saveBackup(result);
+    } else if (action == _ExportAction.iCloud) {
+      await _saveBackupToICloud(result);
     }
   }
 
@@ -159,6 +177,31 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _status = 'Save is unavailable here. Use Share instead.');
+    }
+  }
+
+  Future<void> _saveBackupToICloud(BackupExportResult result) async {
+    setState(() {
+      _busy = true;
+      _status = 'Saving backup to iCloud Drive...';
+    });
+
+    try {
+      final savedPath = await ref
+          .read(backupServiceProvider)
+          .saveBackupToICloud(result);
+      if (!mounted) return;
+      setState(() {
+        _status = 'Backup saved to iCloud Drive: $savedPath';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _status =
+            'iCloud backup failed. Check iCloud Drive is enabled for this device: $error';
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -217,4 +260,4 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   }
 }
 
-enum _ExportAction { share, save }
+enum _ExportAction { share, save, iCloud }

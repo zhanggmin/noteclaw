@@ -9,6 +9,21 @@ import 'package:flutterclaw/data/models/model_catalog.dart';
 import 'package:flutterclaw/services/email_service.dart';
 import 'package:flutterclaw/services/oauth_service.dart';
 
+int? _optionalInt(Object? value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return int.tryParse(trimmed);
+  }
+  return null;
+}
+
+int _intOrDefault(Object? value, int defaultValue) =>
+    _optionalInt(value) ?? defaultValue;
+
 /// Stores authentication credentials for a provider (API key + optional base URL).
 /// Credentials are stored at the provider level so all models from the same
 /// provider can share them without re-authentication.
@@ -95,7 +110,7 @@ class ModelEntry {
     model: json['model'] as String,
     apiKey: json['api_key'] as String?,
     apiBase: json['api_base'] as String?,
-    requestTimeout: json['request_timeout'] as int?,
+    requestTimeout: _optionalInt(json['request_timeout']),
     provider: json['provider'] as String? ?? 'openai',
     isFree: json['is_free'] as bool? ?? false,
     input: (json['input'] as List<dynamic>?)?.cast<String>(),
@@ -179,11 +194,11 @@ class AgentsDefaults {
     workspace: json['workspace'] as String? ?? '~/.flutterclaw/workspace',
     modelName:
         json['model_name'] as String? ?? json['model'] as String? ?? 'gpt-4o',
-    maxTokens: json['max_tokens'] as int? ?? 8192,
+    maxTokens: _intOrDefault(json['max_tokens'], 8192),
     temperature: (json['temperature'] as num?)?.toDouble() ?? 0.7,
-    maxToolIterations: json['max_tool_iterations'] as int? ?? 20,
+    maxToolIterations: _intOrDefault(json['max_tool_iterations'], 20),
     restrictToWorkspace: json['restrict_to_workspace'] as bool? ?? true,
-    maxToolResultTokens: json['max_tool_result_tokens'] as int? ?? 50000,
+    maxToolResultTokens: _intOrDefault(json['max_tool_result_tokens'], 50000),
     autoCompactEnabled: json['auto_compact_enabled'] as bool? ?? true,
     autoCompactThreshold:
         (json['auto_compact_threshold'] as num?)?.toDouble() ?? 0.85,
@@ -483,7 +498,7 @@ class WebSearchProviderConfig {
       WebSearchProviderConfig(
         enabled: json['enabled'] as bool? ?? false,
         apiKey: json['api_key'] as String?,
-        maxResults: json['max_results'] as int? ?? 5,
+        maxResults: _intOrDefault(json['max_results'], 5),
       );
 
   Map<String, dynamic> toJson() => {
@@ -559,9 +574,9 @@ class BrowserConfig {
 
   factory BrowserConfig.fromJson(Map<String, dynamic> json) => BrowserConfig(
     antiDetectionEnabled: json['anti_detection_enabled'] as bool? ?? true,
-    maxProfileSizeMb: json['max_profile_size_mb'] as int? ?? 5,
-    maxTabs: json['max_tabs'] as int? ?? 5,
-    networkLogMaxEntries: json['network_log_max_entries'] as int? ?? 200,
+    maxProfileSizeMb: _intOrDefault(json['max_profile_size_mb'], 5),
+    maxTabs: _intOrDefault(json['max_tabs'], 5),
+    networkLogMaxEntries: _intOrDefault(json['network_log_max_entries'], 200),
   );
 
   Map<String, dynamic> toJson() => {
@@ -619,7 +634,7 @@ class HeartbeatConfig {
   factory HeartbeatConfig.fromJson(Map<String, dynamic> json) =>
       HeartbeatConfig(
         enabled: json['enabled'] as bool? ?? true,
-        interval: json['interval'] as int? ?? 30,
+        interval: _intOrDefault(json['interval'], 30),
       );
 
   Map<String, dynamic> toJson() => {'enabled': enabled, 'interval': interval};
@@ -656,7 +671,7 @@ class GatewayConfig {
 
   factory GatewayConfig.fromJson(Map<String, dynamic> json) => GatewayConfig(
     host: json['host'] as String? ?? '127.0.0.1',
-    port: json['port'] as int? ?? 18789,
+    port: _intOrDefault(json['port'], 18789),
     autoStart: json['auto_start'] as bool? ?? true,
     token: json['token'] as String? ?? '',
     webhookEnabled: json['webhook_enabled'] as bool? ?? true,

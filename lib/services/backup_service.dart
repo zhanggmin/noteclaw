@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutterclaw/data/models/config.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
@@ -48,6 +49,10 @@ class BackupService {
   BackupService({required this.configManager});
 
   final ConfigManager configManager;
+
+  static const MethodChannel _icloudChannel = MethodChannel(
+    'ai.flutterclaw/icloud_backup',
+  );
 
   static const int backupFormatVersion = 1;
   static const String manifestPath = 'manifest.json';
@@ -146,6 +151,21 @@ class BackupService {
       bytes: bytes,
       includedFiles: includedFiles,
     );
+  }
+
+  Future<String> saveBackupToICloud(BackupExportResult backup) async {
+    if (!Platform.isIOS) {
+      throw UnsupportedError('iCloud backup is only available on iOS.');
+    }
+
+    final path = await _icloudChannel.invokeMethod<String>('saveBackup', {
+      'sourcePath': backup.file.path,
+      'fileName': backup.fileName,
+    });
+    if (path == null || path.isEmpty) {
+      throw StateError('iCloud backup did not return a saved path.');
+    }
+    return path;
   }
 
   Future<BackupValidationResult> validateBackup(File file) async {
